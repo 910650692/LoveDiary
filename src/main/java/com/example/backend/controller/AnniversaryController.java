@@ -5,6 +5,7 @@ import com.example.backend.service.AnniversaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -81,5 +82,100 @@ public class AnniversaryController {
     @GetMapping("/search")
     public List<Anniversary> searchAnniversaries(@RequestParam String keyword) {
         return anniversaryService.searchAnniversaries(keyword);
+    }
+    
+    // ========== 新增：纪念日计算相关的API接口 ==========
+    
+    /**
+     * 获取即将到来的纪念日（默认30天内）
+     * GET /api/anniversaries/couple/1/upcoming
+     */
+    @GetMapping("/couple/{coupleId}/upcoming")
+    public List<Anniversary> getUpcomingAnniversaries(@PathVariable Long coupleId) {
+        return anniversaryService.getUpcomingAnniversaries(coupleId);
+    }
+    
+    /**
+     * 获取即将到来的纪念日（指定天数内）
+     * GET /api/anniversaries/couple/1/upcoming/7
+     * 特殊用法：days=0 表示获取今天的纪念日
+     */
+    @GetMapping("/couple/{coupleId}/upcoming/{days}")
+    public List<Anniversary> getUpcomingAnniversaries(@PathVariable Long coupleId, @PathVariable int days) {
+        return anniversaryService.getUpcomingAnniversaries(coupleId, days);
+    }
+    
+    /**
+     * 获取纪念日概览（今天+即将到来的）
+     * GET /api/anniversaries/couple/1/overview
+     */
+    @GetMapping("/couple/{coupleId}/overview")
+    public Map<String, Object> getAnniversaryOverview(@PathVariable Long coupleId) {
+        List<Anniversary> today = anniversaryService.getUpcomingAnniversaries(coupleId, 0);
+        List<Anniversary> upcoming7Days = anniversaryService.getUpcomingAnniversaries(coupleId, 7);
+        List<Anniversary> upcoming30Days = anniversaryService.getUpcomingAnniversaries(coupleId, 30);
+        
+        Map<String, Object> overview = new java.util.HashMap<>();
+        overview.put("today", today);
+        overview.put("hasToday", !today.isEmpty());
+        overview.put("next7Days", upcoming7Days);
+        overview.put("next30Days", upcoming30Days);
+        overview.put("thisMonth", anniversaryService.getThisMonthAnniversaries(coupleId));
+        
+        return overview;
+    }
+    
+    /**
+     * 获取纪念日的详细统计信息
+     * GET /api/anniversaries/1/stats
+     */
+    @GetMapping("/{id}/stats")
+    public Map<String, Object> getAnniversaryStats(@PathVariable Long id) {
+        Map<String, Object> stats = anniversaryService.getAnniversaryStats(id);
+        if (stats == null) {
+            throw new RuntimeException("纪念日不存在，ID: " + id);
+        }
+        return stats;
+    }
+    
+    /**
+     * 检查是否有重要纪念日即将到来（7天内）
+     * GET /api/anniversaries/couple/1/important-coming
+     */
+    @GetMapping("/couple/{coupleId}/important-coming")
+    public Map<String, Object> checkImportantAnniversaryComingUp(@PathVariable Long coupleId) {
+        boolean hasImportant = anniversaryService.hasImportantAnniversaryComingUp(coupleId);
+        List<Anniversary> upcoming = anniversaryService.getUpcomingAnniversaries(coupleId, 7);
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("hasImportantAnniversary", hasImportant);
+        result.put("upcomingAnniversaries", upcoming);
+        result.put("count", upcoming.size());
+        
+        return result;
+    }
+    
+    // ========== 新增：iOS推送相关API ==========
+    
+    /**
+     * 获取推送通知数据（为iOS本地推送提供内容）
+     * GET /api/anniversaries/couple/1/notifications
+     */
+    @GetMapping("/couple/{coupleId}/notifications")
+    public List<Map<String, Object>> getNotificationData(@PathVariable Long coupleId) {
+        return anniversaryService.getNotificationData(coupleId);
+    }
+    
+    /**
+     * 获取单个纪念日的推送内容
+     * GET /api/anniversaries/1/notification-content
+     */
+    @GetMapping("/{id}/notification-content")
+    public Map<String, Object> getNotificationContent(@PathVariable Long id) {
+        Map<String, Object> content = anniversaryService.getNotificationContent(id);
+        if (content == null) {
+            throw new RuntimeException("纪念日不存在，ID: " + id);
+        }
+        return content;
     }
 }

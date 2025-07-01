@@ -3,6 +3,7 @@ package com.example.backend.model;
 import lombok.Data;
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 /**
  * 纪念日实体类 - 简单版本
@@ -68,5 +69,75 @@ public class Anniversary {
     
     public Long getCoupleId() {
         return coupleId;
+    }
+    
+    // ========== 新增：计算纪念日相关的方法 ==========
+    
+    /**
+     * 计算距离下次纪念日还有多少天
+     * 如果今年的纪念日已过，则计算到明年的纪念日
+     * 
+     * @return 天数（0表示今天就是纪念日）
+     */
+    public long getDaysUntilNext() {
+        LocalDate today = LocalDate.now();
+        
+        // 计算今年的纪念日
+        LocalDate thisYearAnniversary = this.date.withYear(today.getYear());
+        
+        // 如果今年的纪念日已经过了，就计算明年的
+        if (thisYearAnniversary.isBefore(today)) {
+            thisYearAnniversary = thisYearAnniversary.plusYears(1);
+        }
+        
+        return ChronoUnit.DAYS.between(today, thisYearAnniversary);
+    }
+    
+    /**
+     * 计算已经度过了多少天
+     * 从第一个纪念日到现在
+     * 
+     * @return 已过天数
+     */
+    public long getDaysPassed() {
+        LocalDate today = LocalDate.now();
+        return ChronoUnit.DAYS.between(this.date, today);
+    }
+    
+    /**
+     * 计算已经度过了多少年
+     * 
+     * @return 已过年数
+     */
+    public long getYearsPassed() {
+        LocalDate today = LocalDate.now();
+        return ChronoUnit.YEARS.between(this.date, today);
+    }
+    
+    /**
+     * 判断今天是否是纪念日
+     * 
+     * @return true表示今天是纪念日
+     */
+    public boolean isToday() {
+        LocalDate today = LocalDate.now();
+        return this.date.getMonthValue() == today.getMonthValue() 
+            && this.date.getDayOfMonth() == today.getDayOfMonth();
+    }
+    
+    /**
+     * 获取下次纪念日的完整日期
+     * 
+     * @return 下次纪念日的日期
+     */
+    public LocalDate getNextAnniversaryDate() {
+        LocalDate today = LocalDate.now();
+        LocalDate thisYearAnniversary = this.date.withYear(today.getYear());
+        
+        if (thisYearAnniversary.isBefore(today)) {
+            return thisYearAnniversary.plusYears(1);
+        }
+        
+        return thisYearAnniversary;
     }
 }
