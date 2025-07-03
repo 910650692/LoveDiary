@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS anniversaries (
     -- 情侣ID，用于数据隔离，不能为空
     couple_id BIGINT NOT NULL,
     
+    -- 是否启用推送通知，默认为true
+    enable_notification BOOLEAN NOT NULL DEFAULT TRUE,
+    
     -- 创建时间（可选，Spring Boot会自动管理）
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -44,13 +47,16 @@ CREATE INDEX idx_date ON anniversaries(date);
 -- 为couple_id和date创建组合索引
 CREATE INDEX idx_couple_date ON anniversaries(couple_id, date);
 
+-- 为推送查询创建索引
+CREATE INDEX idx_couple_notification ON anniversaries(couple_id, enable_notification);
+
 -- 5. 插入一些测试数据
-INSERT INTO anniversaries (name, date, notes, couple_id) VALUES 
-('初次相遇', '2023-05-20', '在咖啡厅第一次见面，那是一个阳光明媚的下午', 1),
-('第一次约会', '2023-06-14', '一起看了电影，牵手漫步在公园里', 1),
-('正式交往', '2023-07-01', '在星空下许下承诺，从朋友变成恋人', 1),
-('小王的生日', '1995-08-15', '记住这个重要的日子', 1),
-('小李的生日', '1996-12-03', '记住这个重要的日子', 1);
+INSERT INTO anniversaries (name, date, notes, couple_id, enable_notification) VALUES 
+('初次相遇', '2023-05-20', '在咖啡厅第一次见面，那是一个阳光明媚的下午', 1, TRUE),
+('第一次约会', '2023-06-14', '一起看了电影，牵手漫步在公园里', 1, FALSE),
+('正式交往', '2023-07-01', '在星空下许下承诺，从朋友变成恋人', 1, TRUE),
+('小王的生日', '1995-08-15', '记住这个重要的日子', 1, TRUE),
+('小李的生日', '1996-12-03', '记住这个重要的日子', 1, TRUE);
 
 -- 6. 查看创建的表结构
 DESCRIBE anniversaries;

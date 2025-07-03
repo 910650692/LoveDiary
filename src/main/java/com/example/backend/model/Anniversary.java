@@ -30,6 +30,15 @@ public class Anniversary {
     @Column(name = "couple_id", nullable = false)  // 指定数据库字段名
     private Long coupleId;
     
+    /**
+     * 是否启用推送通知
+     * true: 需要推送通知（如生日、恋爱纪念日等重要事件）
+     * false: 不需要推送通知（如第一次做某事等普通纪念日）
+     * 默认值为true，保证重要纪念日不会被遗漏
+     */
+    @Column(name = "enable_notification", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean enableNotification = true;
+    
     // 临时手动添加的setter方法（当Lombok生效后可以删除）
     public void setId(Long id) {
         this.id = id;
@@ -69,6 +78,14 @@ public class Anniversary {
     
     public Long getCoupleId() {
         return coupleId;
+    }
+    
+    public void setEnableNotification(Boolean enableNotification) {
+        this.enableNotification = enableNotification;
+    }
+    
+    public Boolean getEnableNotification() {
+        return enableNotification;
     }
     
     // ========== 新增：计算纪念日相关的方法 ==========

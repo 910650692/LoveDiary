@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * 纪念日业务逻辑类 - 简单版本
@@ -44,6 +45,10 @@ public class AnniversaryService {
      * 保存纪念日（新增或更新）
      */
     public Anniversary saveAnniversary(Anniversary anniversary) {
+        // 如果是新创建的纪念日且没有设置推送状态，默认设为true
+        if (anniversary.getId() == null && anniversary.getEnableNotification() == null) {
+            anniversary.setEnableNotification(true);
+        }
         return anniversaryRepository.save(anniversary);
     }
     
@@ -158,7 +163,7 @@ public class AnniversaryService {
     
     /**
      * 获取推送通知数据（为iOS本地推送提供内容）
-     * 返回所有纪念日的推送数据，包括当天和提前1天的推送内容
+     * 只返回启用了推送通知的纪念日的推送数据，包括当天和提前1天的推送内容
      * 
      * @param coupleId 情侣ID
      * @return 推送通知数据列表
@@ -167,7 +172,12 @@ public class AnniversaryService {
         List<Anniversary> allAnniversaries = anniversaryRepository.findByCoupleId(coupleId);
         List<java.util.Map<String, Object>> notifications = new java.util.ArrayList<>();
         
+        // 只处理启用了推送通知的纪念日
         for (Anniversary anniversary : allAnniversaries) {
+            // 检查是否启用推送通知
+            if (anniversary.getEnableNotification() == null || !anniversary.getEnableNotification()) {
+                continue; // 跳过未启用推送的纪念日
+            }
             // 当天推送
             java.util.Map<String, Object> todayNotification = new java.util.HashMap<>();
             todayNotification.put("anniversaryId", anniversary.getId());
@@ -321,17 +331,74 @@ public class AnniversaryService {
      * 生成普通纪念日的提前提醒文案
      */
     private String generateAnniversaryReminderText(Anniversary anniversary) {
-        String[] reminderMessages = {
-            "记得为TA准备一个小惊喜哦～🎁",
-            "要不要计划一个特别的庆祝呢？🎊", 
-            "这个特殊的日子值得好好纪念📝",
-            "期待你们美好的纪念日时光🌈"
-        };
+        long days = anniversary.getDaysUntilNext() + 1; // 提前1天，所以加1
+        long years = anniversary.getYearsPassed() + 1;  // 即将到来的年数
         
-        long daysPassed = anniversary.getDaysPassed();
-        String randomMessage = reminderMessages[(int)(daysPassed % reminderMessages.length)];
+        return String.format("明天是你们的\"%s\"纪念日！\n" +
+                           "即将陪伴%d年了，记得准备惊喜哦💕", 
+                           anniversary.getName(), years);
+    }
+    
+    // ========== 新增：推送设置管理相关方法 ==========
+    
+    /**
+     * 获取启用了推送的纪念日列表
+     * 
+     * @param coupleId 情侣ID
+     * @return 启用推送的纪念日列表
+     */
+    public List<Anniversary> getNotificationEnabledAnniversaries(Long coupleId) {
+        List<Anniversary> allAnniversaries = anniversaryRepository.findByCoupleId(coupleId);
         
-        return String.format("明天是你们的\"%s\"纪念日\n%s", 
-            anniversary.getName(), randomMessage);
+        return allAnniversaries.stream()
+                .filter(anniversary -> anniversary.getEnableNotification() != null && anniversary.getEnableNotification())
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 批量设置推送开关
+     * 
+     * @param anniversaryIds 纪念日ID列表
+     * @param enabled 是否启用推送
+     * @return 更新的纪念日数量
+     */
+    public int batchUpdateNotificationStatus(List<Long> anniversaryIds, boolean enabled) {
+        int count = 0;
+        for (Long id : anniversaryIds) {
+            Optional<Anniversary> anniversaryOpt = anniversaryRepository.findById(id);
+            if (anniversaryOpt.isPresent()) {
+                Anniversary anniversary = anniversaryOpt.get();
+                anniversary.setEnableNotification(enabled);
+                anniversaryRepository.save(anniversary);
+                count++;
+            }
+        }
+        return count;
+    }
+    
+
+    
+    /**
+     * 获取推送设置统计信息
+     * 
+     * @param coupleId 情侣ID
+     * @return 推送设置统计
+     */
+    public Map<String, Object> getNotificationStats(Long coupleId) {
+        List<Anniversary> allAnniversaries = anniversaryRepository.findByCoupleId(coupleId);
+        
+        long total = allAnniversaries.size();
+        long enabled = allAnniversaries.stream()
+                .filter(a -> a.getEnableNotification() != null && a.getEnableNotification())
+                .count();
+        long disabled = total - enabled;
+        
+        Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("total", total);
+        stats.put("enabled", enabled);
+        stats.put("disabled", disabled);
+        stats.put("enabledPercentage", total > 0 ? (double) enabled / total * 100 : 0);
+        
+        return stats;
     }
 } 

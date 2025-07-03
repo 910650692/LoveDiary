@@ -178,4 +178,81 @@ public class AnniversaryController {
         }
         return content;
     }
+    
+    // ========== 新增：推送设置管理API ==========
+    
+    /**
+     * 获取启用了推送的纪念日列表
+     * GET /api/anniversaries/couple/1/notification-enabled
+     */
+    @GetMapping("/couple/{coupleId}/notification-enabled")
+    public List<Anniversary> getNotificationEnabledAnniversaries(@PathVariable Long coupleId) {
+        return anniversaryService.getNotificationEnabledAnniversaries(coupleId);
+    }
+    
+    /**
+     * 获取推送设置统计信息
+     * GET /api/anniversaries/couple/1/notification-stats
+     */
+    @GetMapping("/couple/{coupleId}/notification-stats")
+    public Map<String, Object> getNotificationStats(@PathVariable Long coupleId) {
+        return anniversaryService.getNotificationStats(coupleId);
+    }
+    
+    /**
+     * 切换单个纪念日的推送状态
+     * PUT /api/anniversaries/1/notification-toggle
+     */
+    @PutMapping("/{id}/notification-toggle")
+    public Map<String, Object> toggleNotification(@PathVariable Long id) {
+        Optional<Anniversary> anniversaryOpt = anniversaryService.getAnniversaryById(id);
+        if (anniversaryOpt.isEmpty()) {
+            throw new RuntimeException("纪念日不存在，ID: " + id);
+        }
+        
+        Anniversary anniversary = anniversaryOpt.get();
+        boolean currentStatus = anniversary.getEnableNotification() != null ? anniversary.getEnableNotification() : true;
+        anniversary.setEnableNotification(!currentStatus);
+        Anniversary updated = anniversaryService.saveAnniversary(anniversary);
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("id", id);
+        result.put("name", updated.getName());
+        result.put("enableNotification", updated.getEnableNotification());
+        result.put("message", updated.getEnableNotification() ? "已启用推送通知" : "已禁用推送通知");
+        
+        return result;
+    }
+    
+    /**
+     * 批量设置推送开关
+     * PUT /api/anniversaries/batch-notification
+     * 请求体: {"anniversaryIds": [1,2,3], "enabled": true}
+     */
+    @PutMapping("/batch-notification")
+    public Map<String, Object> batchUpdateNotificationStatus(@RequestBody Map<String, Object> requestBody) {
+        @SuppressWarnings("unchecked")
+        List<Integer> anniversaryIdInts = (List<Integer>) requestBody.get("anniversaryIds");
+        List<Long> anniversaryIds = anniversaryIdInts.stream()
+                .map(Integer::longValue)
+                .collect(java.util.stream.Collectors.toList());
+        Boolean enabled = (Boolean) requestBody.get("enabled");
+        
+        if (anniversaryIds == null || enabled == null) {
+            throw new RuntimeException("请求参数不完整，需要anniversaryIds和enabled字段");
+        }
+        
+        int count = anniversaryService.batchUpdateNotificationStatus(anniversaryIds, enabled);
+        
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("updatedCount", count);
+        result.put("totalRequested", anniversaryIds.size());
+        result.put("enabled", enabled);
+        result.put("message", String.format("成功%s %d个纪念日的推送通知", 
+                                           enabled ? "启用" : "禁用", count));
+        
+        return result;
+    }
+    
+
 }
