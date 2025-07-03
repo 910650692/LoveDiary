@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Map;
+import java.util.ArrayList;
 
 /**
  * 纪念日业务逻辑类 - 简单版本
@@ -400,5 +401,25 @@ public class AnniversaryService {
         stats.put("enabledPercentage", total > 0 ? (double) enabled / total * 100 : 0);
         
         return stats;
+    }
+    
+    // ========== 新增：JWT认证相关方法 ==========
+    
+    /**
+     * 根据用户ID获取纪念日（先获取用户的coupleId，再查询纪念日）
+     */
+    public List<Anniversary> getAnniversariesByUserId(Long userId) {
+        // 这里需要获取用户的coupleId
+        // 暂时返回空列表，具体实现需要用户服务
+        return new ArrayList<>();
+    }
+    
+    /**
+     * 验证用户是否属于指定的情侣
+     */
+    public boolean isUserInCouple(Long userId, Long coupleId) {
+        // 这里需要验证用户权限
+        // 暂时返回true，具体实现需要用户服务
+        return true;
     }
 } 

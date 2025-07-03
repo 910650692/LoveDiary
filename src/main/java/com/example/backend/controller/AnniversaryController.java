@@ -4,6 +4,7 @@ import com.example.backend.model.Anniversary;
 import com.example.backend.service.AnniversaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -18,7 +19,7 @@ public class AnniversaryController {
     
     @Autowired  // 注入Service
     private AnniversaryService anniversaryService;
-    
+
     /**
      * 获取所有纪念日
      * GET /api/anniversaries
@@ -29,11 +30,27 @@ public class AnniversaryController {
     }
     
     /**
-     * 根据情侣ID获取纪念日
+     * 根据当前用户获取纪念日（从JWT token中获取用户信息）
+     * GET /api/anniversaries/my
+     */
+    @GetMapping("/my")
+    public List<Anniversary> getMyAnniversaries(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        // 需要先根据userId获取coupleId，然后查询纪念日
+        return anniversaryService.getAnniversariesByUserId(userId);
+    }
+    
+    /**
+     * 根据情侣ID获取纪念日（保留原有方法，但需要验证权限）
      * GET /api/anniversaries/couple/1
      */
     @GetMapping("/couple/{coupleId}")
-    public List<Anniversary> getAnniversariesByCoupleId(@PathVariable Long coupleId) {
+    public List<Anniversary> getAnniversariesByCoupleId(@PathVariable Long coupleId, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        // 验证当前用户是否属于这个情侣
+        if (!anniversaryService.isUserInCouple(userId, coupleId)) {
+            throw new RuntimeException("无权访问此情侣的纪念日");
+        }
         return anniversaryService.getAnniversariesByCoupleId(coupleId);
     }
     
