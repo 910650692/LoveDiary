@@ -35,8 +35,14 @@ public class Couple {
     /**
      * 恋爱开始日期
      */
-    @Column(name = "anniversary_date")
-    private LocalDate anniversaryDate;
+    @Column(name = "love_start_date")
+    private LocalDate loveStartDate;
+    
+    /**
+     * 匹配日期（情侣关系建立的时间）
+     */
+    @Column(name = "match_date")
+    private LocalDateTime matchDate;
     
     /**
      * 情侣状态

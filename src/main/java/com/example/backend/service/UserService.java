@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -236,6 +238,10 @@ public class UserService {
             couple.setStatus(Couple.CoupleStatus.ACTIVE);
             couple.setIsDeleted(false);
             
+            // 设置恋爱开始日期为当天（默认值）
+            couple.setLoveStartDate(LocalDate.now());
+            couple.setMatchDate(LocalDateTime.now());
+            
             Couple savedCouple = coupleRepository.save(couple);
             
             // 更新用户状态
@@ -425,7 +431,8 @@ public class UserService {
         coupleInfo.put("id", couple.getId());
         coupleInfo.put("user1Id", couple.getUser1Id());
         coupleInfo.put("user2Id", couple.getUser2Id());
-        coupleInfo.put("anniversaryDate", couple.getAnniversaryDate());
+        coupleInfo.put("loveStartDate", couple.getLoveStartDate());
+        coupleInfo.put("matchDate", couple.getMatchDate());
         coupleInfo.put("status", couple.getStatus().name());
         coupleInfo.put("createdAt", couple.getCreatedAt());
         return coupleInfo;
