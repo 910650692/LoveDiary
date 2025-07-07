@@ -437,4 +437,266 @@ public class UserService {
         coupleInfo.put("createdAt", couple.getCreatedAt());
         return coupleInfo;
     }
+    
+    // ========== 新增方法 ==========
+    
+    /**
+     * 更新用户资料
+     */
+    public Map<String, Object> updateProfile(Long userId, Map<String, Object> profileData) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (!userOpt.isPresent()) {
+                result.put("success", false);
+                result.put("message", "用户不存在");
+                return result;
+            }
+            
+            User user = userOpt.get();
+            boolean hasChanges = false;
+            
+            // 更新昵称
+            if (profileData.containsKey("nickname")) {
+                String nickname = (String) profileData.get("nickname");
+                if (nickname != null && !nickname.trim().isEmpty()) {
+                    user.setNickname(nickname.trim());
+                    hasChanges = true;
+                }
+            }
+            
+            // 更新邮箱
+            if (profileData.containsKey("email")) {
+                String email = (String) profileData.get("email");
+                if (email != null && !email.trim().isEmpty()) {
+                    // 检查邮箱是否已被其他用户使用
+                    if (!email.equals(user.getEmail()) && userRepository.existsByEmail(email)) {
+                        result.put("success", false);
+                        result.put("message", "邮箱已被其他用户使用");
+                        return result;
+                    }
+                    user.setEmail(email.trim());
+                    hasChanges = true;
+                }
+            }
+            
+            // 更新手机号
+            if (profileData.containsKey("phone")) {
+                String phone = (String) profileData.get("phone");
+                user.setPhone(phone);
+                hasChanges = true;
+            }
+            
+            // 更新性别
+            if (profileData.containsKey("gender")) {
+                String genderStr = (String) profileData.get("gender");
+                if (genderStr != null) {
+                    try {
+                        User.Gender gender = User.Gender.valueOf(genderStr.toUpperCase());
+                        user.setGender(gender);
+                        hasChanges = true;
+                    } catch (IllegalArgumentException e) {
+                        result.put("success", false);
+                        result.put("message", "性别值无效");
+                        return result;
+                    }
+                }
+            }
+            
+            // 更新生日
+            if (profileData.containsKey("birthDate")) {
+                String birthDateStr = (String) profileData.get("birthDate");
+                if (birthDateStr != null && !birthDateStr.trim().isEmpty()) {
+                    try {
+                        LocalDate birthDate = LocalDate.parse(birthDateStr);
+                        user.setBirthDate(birthDate);
+                        hasChanges = true;
+                    } catch (Exception e) {
+                        result.put("success", false);
+                        result.put("message", "生日格式无效，请使用YYYY-MM-DD格式");
+                        return result;
+                    }
+                }
+            }
+            
+            if (hasChanges) {
+                userRepository.save(user);
+                result.put("success", true);
+                result.put("message", "资料更新成功");
+                result.put("user", createUserInfo(user));
+            } else {
+                result.put("success", false);
+                result.put("message", "没有需要更新的内容");
+            }
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "更新失败：" + e.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 修改密码
+     */
+    public Map<String, Object> changePassword(Long userId, String oldPassword, String newPassword) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (!userOpt.isPresent()) {
+                result.put("success", false);
+                result.put("message", "用户不存在");
+                return result;
+            }
+            
+            User user = userOpt.get();
+            
+            // 验证旧密码
+            if (!verifyPassword(oldPassword, user.getPassword())) {
+                result.put("success", false);
+                result.put("message", "原密码错误");
+                return result;
+            }
+            
+            // 验证新密码
+            if (newPassword == null || newPassword.trim().isEmpty()) {
+                result.put("success", false);
+                result.put("message", "新密码不能为空");
+                return result;
+            }
+            
+            if (newPassword.length() < 6) {
+                result.put("success", false);
+                result.put("message", "新密码长度不能少于6位");
+                return result;
+            }
+            
+            // 更新密码
+            user.setPassword(hashPassword(newPassword));
+            userRepository.save(user);
+            
+            result.put("success", true);
+            result.put("message", "密码修改成功");
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "密码修改失败：" + e.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 获取用户统计信息
+     */
+    public Map<String, Object> getUserStats(Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (!userOpt.isPresent()) {
+                result.put("success", false);
+                result.put("message", "用户不存在");
+                return result;
+            }
+            
+            User user = userOpt.get();
+            
+            // 基础统计
+            result.put("userId", userId);
+            result.put("username", user.getUsername());
+            result.put("nickname", user.getNickname());
+            result.put("registrationDate", user.getCreatedAt());
+            result.put("isMatched", user.isMatched());
+            result.put("coupleId", user.getCoupleId());
+            
+            // 如果有情侣，获取情侣统计
+            if (user.isMatched()) {
+                Optional<Couple> coupleOpt = coupleRepository.findById(user.getCoupleId());
+                if (coupleOpt.isPresent()) {
+                    Couple couple = coupleOpt.get();
+                    result.put("matchDate", couple.getMatchDate());
+                    result.put("loveStartDate", couple.getLoveStartDate());
+                    
+                    // 计算恋爱天数
+                    if (couple.getLoveStartDate() != null) {
+                        long loveDays = java.time.temporal.ChronoUnit.DAYS.between(
+                            couple.getLoveStartDate(), LocalDate.now());
+                        result.put("loveDays", loveDays);
+                    }
+                }
+            }
+            
+            result.put("success", true);
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "获取统计信息失败：" + e.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 搜索用户（通过用户名或昵称）
+     */
+    public Map<String, Object> searchUsers(String keyword) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                result.put("success", false);
+                result.put("message", "搜索关键词不能为空");
+                return result;
+            }
+            
+            List<User> users = userRepository.searchUsers(keyword.trim());
+            
+            List<Map<String, Object>> userList = new ArrayList<>();
+            for (User user : users) {
+                if (!user.getIsDeleted()) {
+                    Map<String, Object> userInfo = new HashMap<>();
+                    userInfo.put("id", user.getId());
+                    userInfo.put("username", user.getUsername());
+                    userInfo.put("nickname", user.getNickname());
+                    userInfo.put("avatarUrl", user.getAvatarUrl());
+                    userInfo.put("status", user.getStatus().name());
+                    userList.add(userInfo);
+                }
+            }
+            
+            result.put("success", true);
+            result.put("users", userList);
+            result.put("count", userList.size());
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "搜索失败：" + e.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 检查用户名是否可用
+     */
+    public boolean isUsernameAvailable(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+        return !userRepository.existsByUsername(username.trim());
+    }
+    
+    /**
+     * 检查邮箱是否可用
+     */
+    public boolean isEmailAvailable(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        return !userRepository.existsByEmail(email.trim());
+    }
 } 
