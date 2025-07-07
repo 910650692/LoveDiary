@@ -1,8 +1,11 @@
 package com.example.backend.config;
 
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,11 +17,12 @@ import java.util.Map;
 @Component
 public class JwtUtil {
     
-    // JWT密钥（生产环境应该从配置文件读取）
-    private static final String SECRET_KEY = "mySecretKey123456789LoveDiaryApp2024";
+    // 64字节安全密钥（用Keys.secretKeyFor(SignatureAlgorithm.HS512)生成）
+    private static final String SECRET_KEY = "2vQw1n6Qw8JZk3pX9r5sT7uV0y2bC4eF6h8jK0mN2q4sT6vX8zA1C3E5G7I9K0M2P4";
+    private static final SecretKey KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
     
     // token过期时间（7天）
-    private static final long EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    private static final long EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000L;
     
     /**
      * 生成JWT token
@@ -33,7 +37,7 @@ public class JwtUtil {
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(SignatureAlgorithm.HS512, SECRET_KEY)
+                .signWith(KEY, SignatureAlgorithm.HS512)
                 .compact();
     }
     
@@ -90,8 +94,9 @@ public class JwtUtil {
      * 从token中解析Claims
      */
     private Claims getClaimsFromToken(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+        return Jwts.parserBuilder()
+                .setSigningKey(KEY)
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }

@@ -90,6 +90,29 @@ public class UserService {
             user.setStatus(User.UserStatus.SINGLE);
             user.setIsDeleted(false);
             
+            // 设置默认头像（根据性别）
+            String genderStr = registerData.get("gender");
+            if (genderStr != null) {
+                try {
+                    User.Gender gender = User.Gender.valueOf(genderStr.toUpperCase());
+                    user.setGender(gender);
+                    // 设置默认头像
+                    if (gender == User.Gender.FEMALE) {
+                        user.setAvatarUrl("/images/default-female.png");
+                    } else {
+                        user.setAvatarUrl("/images/default-male.png");
+                    }
+                } catch (IllegalArgumentException e) {
+                    // 性别值无效，使用默认男性头像
+                    user.setGender(User.Gender.MALE);
+                    user.setAvatarUrl("/images/default-male.png");
+                }
+            } else {
+                // 没有指定性别，使用默认男性头像
+                user.setGender(User.Gender.MALE);
+                user.setAvatarUrl("/images/default-male.png");
+            }
+            
             // 生成唯一邀请码
             String invitationCode = generateUniqueInvitationCode();
             user.setInvitationCode(invitationCode);
