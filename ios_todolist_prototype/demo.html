@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TodoList 功能演示</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+        }
+        
+        .demo-header h1 {
+            color: #FF6B9D;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .demo-header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .demo-section h2 {
+            color: #FF6B9D;
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+        
+        .demo-section p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        
+        .feature-list li i {
+            color: #FF6B9D;
+            margin-right: 12px;
+            width: 20px;
+        }
+        
+        .demo-frame {
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 600px;
+        }
+        
+        .demo-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .demo-actions {
+            text-align: center;
+            margin-top: 40px;
+        }
+        
+        .demo-btn {
+            background: #FF6B9D;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 0 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .demo-btn:hover {
+            background: #e55a8a;
+            transform: translateY(-2px);
+        }
+        
+        .demo-btn.secondary {
+            background: #666;
+        }
+        
+        .demo-btn.secondary:hover {
+            background: #555;
+        }
+        
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .demo-container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>💕 情侣空间 TodoList 原型演示</h1>
+            <p>体验完整的iOS风格愿望清单功能</p>
+        </div>
+        
+        <div class="demo-grid">
+            <div class="demo-section">
+                <h2>🎨 设计特色</h2>
+                <p>采用温馨的粉色主题，营造浪漫的情侣氛围</p>
+                <ul class="feature-list">
+                    <li><i class="fas fa-palette"></i>粉色系配色方案</li>
+                    <li><i class="fas fa-layer-group"></i>卡片式设计布局</li>
+                    <li><i class="fas fa-gradient"></i>渐变背景效果</li>
+                    <li><i class="fas fa-mobile-alt"></i>响应式移动端适配</li>
+                    <li><i class="fas fa-shadows"></i>精致阴影和圆角</li>
+                </ul>
+            </div>
+            
+            <div class="demo-section">
+                <h2>✨ 交互功能</h2>
+                <p>丰富的交互体验，让愿望管理变得有趣</p>
+                <ul class="feature-list">
+                    <li><i class="fas fa-plus-circle"></i>添加新愿望</li>
+                    <li><i class="fas fa-check-circle"></i>完成状态切换</li>
+                    <li><i class="fas fa-trash"></i>左滑删除功能</li>
+                    <li><i class="fas fa-sync"></i>下拉刷新</li>
+                    <li><i class="fas fa-heart"></i>完成庆祝动画</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>📱 实时演示</h2>
+            <p>在下方框架中体验完整的TodoList功能</p>
+            <div class="demo-frame">
+                <iframe src="index.html" title="TodoList Demo"></iframe>
+            </div>
+        </div>
+        
+        <div class="demo-actions">
+            <button class="demo-btn" onclick="openDemo()">
+                <i class="fas fa-external-link-alt"></i> 在新窗口打开
+            </button>
+            <button class="demo-btn secondary" onclick="downloadFiles()">
+                <i class="fas fa-download"></i> 下载源码
+            </button>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🚀 技术实现</h2>
+            <div class="demo-grid">
+                <div>
+                    <h3>前端技术</h3>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-code"></i>原生HTML5</li>
+                        <li><i class="fas fa-paint-brush"></i>CSS3动画</li>
+                        <li><i class="fas fa-js"></i>原生JavaScript</li>
+                        <li><i class="fas fa-mobile"></i>触摸事件处理</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>设计规范</h3>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-ruler"></i>iOS设计语言</li>
+                        <li><i class="fas fa-eye"></i>无障碍访问</li>
+                        <li><i class="fas fa-tachometer-alt"></i>性能优化</li>
+                        <li><i class="fas fa-globe"></i>跨平台兼容</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function openDemo() {
+            window.open('index.html', '_blank');
+        }
+        
+        function downloadFiles() {
+            // 创建下载链接
+            const files = ['index.html', 'styles.css', 'script.js'];
+            files.forEach(file => {
+                const link = document.createElement('a');
+                link.href = file;
+                link.download = file;
+                link.click();
+            });
+        }
+        
+        // 添加页面加载动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const sections = document.querySelectorAll('.demo-section');
+            sections.forEach((section, index) => {
+                setTimeout(() => {
+                    section.style.opacity = '0';
+                    section.style.transform = 'translateY(20px)';
+                    section.style.transition = 'all 0.6s ease';
+                    
+                    setTimeout(() => {
+                        section.style.opacity = '1';
+                        section.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 200);
+            });
+        });
+    </script>
+</body>
+</html> 

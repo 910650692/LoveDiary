@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我们的愿望清单</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 主界面 - Todo列表页 -->
+    <div class="container">
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <button class="nav-btn back-btn">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <h1 class="title">我们的愿望清单</h1>
+            <button class="nav-btn add-btn" onclick="showAddModal()">
+                <i class="fas fa-plus"></i>
+            </button>
+        </header>
+
+        <!-- 内容区域 -->
+        <main class="content">
+                    <!-- 下拉刷新指示器 -->
+        <div class="pull-refresh" id="pullRefresh">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>下拉刷新...</span>
+        </div>
+
+        <!-- 反馈效果切换器 -->
+        <div class="feedback-switcher">
+            <span>反馈效果：</span>
+            <select id="feedbackType" onchange="changeFeedbackType()">
+                <option value="ripple">涟漪效果</option>
+                <option value="slide">滑入效果</option>
+                <option value="fade">淡入缩放</option>
+                <option value="color">背景渐变</option>
+                <option value="button">按钮弹出</option>
+                <option value="none">无效果</option>
+            </select>
+        </div>
+
+            <!-- Todo列表 -->
+            <div class="todo-list" id="todoList">
+                <!-- Todo卡片 1 -->
+                <div class="todo-card" data-id="1">
+                    <div class="todo-content">
+                        <div class="todo-info">
+                            <h3 class="todo-title">一起去旅行</h3>
+                            <p class="todo-description">计划一次浪漫的周末旅行，去海边看日落</p>
+                            <span class="todo-time">2024-01-15 14:30</span>
+                        </div>
+                        <button class="complete-btn" onclick="toggleComplete(1)">
+                            <i class="fas fa-circle"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Todo卡片 2 (已完成) -->
+                <div class="todo-card completed" data-id="2">
+                    <div class="todo-content">
+                        <div class="todo-info">
+                            <h3 class="todo-title">看一场电影</h3>
+                            <p class="todo-description">一起去看最新的爱情电影</p>
+                            <span class="todo-time">2024-01-10 19:00</span>
+                            <span class="completed-time">完成于 2024-01-12 20:30</span>
+                        </div>
+                        <button class="complete-btn completed" onclick="toggleComplete(2)">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Todo卡片 3 -->
+                <div class="todo-card" data-id="3">
+                    <div class="todo-content">
+                        <div class="todo-info">
+                            <h3 class="todo-title">学习做饭</h3>
+                            <p class="todo-description">一起学习做一道新菜</p>
+                            <span class="todo-time">2024-01-08 16:45</span>
+                        </div>
+                        <button class="complete-btn" onclick="toggleComplete(3)">
+                            <i class="fas fa-circle"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Todo卡片 4 -->
+                <div class="todo-card" data-id="4">
+                    <div class="todo-content">
+                        <div class="todo-info">
+                            <h3 class="todo-title">拍情侣写真</h3>
+                            <span class="todo-time">2024-01-05 10:20</span>
+                        </div>
+                        <button class="complete-btn" onclick="toggleComplete(4)">
+                            <i class="fas fa-circle"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 添加Todo模态框 -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <!-- 模态框导航栏 -->
+            <div class="modal-header">
+                <button class="nav-btn cancel-btn" onclick="hideAddModal()">取消</button>
+                <h2 class="modal-title">添加新愿望</h2>
+                <button class="nav-btn save-btn" onclick="saveTodo()">保存</button>
+            </div>
+
+            <!-- 表单内容 -->
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" id="todoTitle" class="form-input" placeholder="写下你们想做的事...">
+                </div>
+                <div class="form-group">
+                    <textarea id="todoDescription" class="form-textarea" placeholder="添加一些细节（可选）"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 庆祝动画容器 -->
+    <div class="celebration-container" id="celebrationContainer"></div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
