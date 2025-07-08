@@ -29,6 +29,13 @@ LoveDiary 是一个专为情侣设计的纪念日管理系统，帮助情侣记�
 - ✅ 推送通知设置
 - ✅ 批量推送管理
 
+### 待办事项管理
+- ✅ 情侣共享待办事项
+- ✅ 状态管理（待完成、已完成）
+- ✅ 基础CRUD操作
+- ✅ 搜索功能
+- ✅ 统计信息
+
 ### 系统功能
 - ✅ 健康检查接口
 - ✅ API文档自动生成
@@ -57,6 +64,7 @@ src/main/java/com/example/backend/
 │   ├── CoupleController.java      # 情侣管理API
 │   ├── LoveInfoController.java    # 恋爱信息API
 │   ├── AnniversaryController.java # 纪念日管理API
+│   ├── TodoItemController.java    # 待办事项管理API
 │   ├── HealthController.java      # 健康检查API
 │   ├── ApiDocController.java      # API文档API
 │   └── GlobalExceptionHandler.java # 全局异常处理
@@ -65,15 +73,18 @@ src/main/java/com/example/backend/
 │   ├── AvatarService.java         # 头像业务逻辑
 │   ├── CoupleService.java         # 情侣业务逻辑
 │   ├── LoveInfoService.java       # 恋爱信息业务逻辑
-│   └── AnniversaryService.java    # 纪念日业务逻辑
+│   ├── AnniversaryService.java    # 纪念日业务逻辑
+│   └── TodoItemService.java       # 待办事项业务逻辑
 ├── model/                 # 实体类
 │   ├── User.java                 # 用户实体
 │   ├── Couple.java               # 情侣实体
-│   └── Anniversary.java          # 纪念日实体
+│   ├── Anniversary.java          # 纪念日实体
+│   └── TodoItem.java             # 待办事项实体
 ├── repository/            # 数据访问层
 │   ├── UserRepository.java       # 用户数据访问
 │   ├── CoupleRepository.java     # 情侣数据访问
-│   └── AnniversaryRepository.java # 纪念日数据访问
+│   ├── AnniversaryRepository.java # 纪念日数据访问
+│   └── TodoItemRepository.java   # 待办事项数据访问
 └── dto/                   # 数据传输对象
     └── LoveInfoDTO.java          # 恋爱信息DTO
 ```
@@ -124,6 +135,16 @@ src/main/java/com/example/backend/
 - `GET /{id}/stats` - 获取纪念日统计
 - `PUT /{id}/notification-toggle` - 切换推送状态
 - `PUT /batch-notification` - 批量设置推送
+
+### 待办事项管理 API (`/api/todos`)
+- `POST /` - 创建待办事项
+- `GET /couple/{coupleId}` - 获取情侣的所有待办事项
+- `GET /couple/{coupleId}/status/{status}` - 根据状态获取待办事项
+- `PUT /{todoId}` - 更新待办事项
+- `PUT /{todoId}/complete` - 完成待办事项
+- `DELETE /{todoId}` - 删除待办事项
+- `GET /couple/{coupleId}/search` - 搜索待办事项
+- `GET /couple/{coupleId}/stats` - 获取待办事项统计
 
 ### 系统管理 API
 - `GET /api/health` - 健康检查

@@ -886,7 +886,217 @@ curl -X GET http://localhost:8080/api/users/me \
 5. **权限控制**: 只能操作自己的数据，情侣数据需要验证权限
 6. **软删除**: 用户和情侣关系采用软删除，不会真正删除数据
 
+## 8. 待办事项管理 API（MVP版本）
+
+### 8.1 创建待办事项
+**POST** `/api/todos`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "coupleId": 1,
+  "title": "买生日礼物",
+  "description": "为另一半准备生日礼物"
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "待办事项创建成功",
+  "todoItem": {
+    "id": 1,
+    "coupleId": 1,
+    "creatorId": 1,
+    "completerId": null,
+    "title": "买生日礼物",
+    "description": "为另一半准备生日礼物",
+    "status": "PENDING",
+    "completedAt": null,
+    "createdAt": "2024-01-01T10:30:00",
+    "updatedAt": "2024-01-01T10:30:00",
+    "isCompleted": false
+  }
+}
+```
+
+### 8.2 获取情侣的所有待办事项
+**GET** `/api/todos/couple/{coupleId}`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "todoItems": [
+    {
+      "id": 1,
+      "coupleId": 1,
+      "creatorId": 1,
+      "completerId": null,
+      "title": "买生日礼物",
+      "description": "为另一半准备生日礼物",
+      "priority": "HIGH",
+      "status": "PENDING",
+      "dueDate": "2024-01-15T18:00:00",
+      "completedAt": null,
+      "tags": ["礼物", "生日"],
+      "isImportant": true,
+      "createdAt": "2024-01-01T10:30:00",
+      "updatedAt": "2024-01-01T10:30:00",
+      "isCompleted": false,
+      "isOverdue": false,
+      "isDueSoon": false
+    }
+  ],
+  "count": 1
+}
+```
+
+### 8.3 根据状态获取待办事项
+**GET** `/api/todos/couple/{coupleId}/status/{status}`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**路径参数**:
+- `status`: 状态值（PENDING, COMPLETED）
+
+**响应**:
+```json
+{
+  "success": true,
+  "todoItems": [...],
+  "count": 1,
+  "status": "PENDING"
+}
+```
+
+### 8.4 更新待办事项
+**PUT** `/api/todos/{todoId}`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+Content-Type: application/json
+```
+
+**请求体**:
+```json
+{
+  "title": "更新后的标题",
+  "description": "更新后的描述"
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "待办事项更新成功",
+  "todoItem": {...}
+}
+```
+
+### 8.5 完成待办事项
+**PUT** `/api/todos/{todoId}/complete`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "待办事项已完成",
+  "todoItem": {
+    "id": 1,
+    "status": "COMPLETED",
+    "completerId": 1,
+    "completedAt": "2024-01-01T11:00:00",
+    "isCompleted": true
+  }
+}
+```
+
+### 8.6 删除待办事项
+**DELETE** `/api/todos/{todoId}`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "待办事项已删除"
+}
+```
+
+### 8.7 搜索待办事项
+**GET** `/api/todos/couple/{coupleId}/search?keyword=关键词`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "todoItems": [...],
+  "count": 1,
+  "keyword": "关键词"
+}
+```
+
+### 8.8 获取待办事项统计信息
+**GET** `/api/todos/couple/{coupleId}/stats`
+
+**请求头**:
+```
+Authorization: Bearer {token}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "stats": {
+    "total": 10,
+    "completed": 5,
+    "pending": 5,
+    "completionRate": 50.0
+  }
+}
+```
+
 ## 更新日志
+
+### v1.1.0 (2024-01-02)
+- 新增待办事项管理功能
+- 支持情侣共享待办事项
+- 支持优先级、状态、标签管理
+- 支持截止日期和提醒功能
+- 支持统计和概览功能
 
 ### v1.0.0 (2024-01-01)
 - 初始版本发布

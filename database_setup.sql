@@ -61,7 +61,73 @@ INSERT INTO anniversaries (name, date, notes, couple_id, enable_notification) VA
 -- 6. 查看创建的表结构
 DESCRIBE anniversaries;
 
--- 7. 查看插入的测试数据
+-- 7. 创建待办事项表（MVP版本）
+CREATE TABLE IF NOT EXISTS todo_items (
+    -- 主键ID，自动增长
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    
+    -- 情侣ID，用于数据隔离，不能为空
+    couple_id BIGINT NOT NULL,
+    
+    -- 创建者用户ID，不能为空
+    creator_id BIGINT NOT NULL,
+    
+    -- 完成者用户ID（如果已完成），可以为空
+    completer_id BIGINT,
+    
+    -- 待办事项标题，最大200字符，不能为空
+    title VARCHAR(200) NOT NULL,
+    
+    -- 待办事项描述，最大1000字符，可以为空
+    description VARCHAR(1000),
+    
+    -- 状态：PENDING（待完成）, COMPLETED（已完成）
+    status ENUM('PENDING', 'COMPLETED') NOT NULL DEFAULT 'PENDING',
+    
+    -- 完成时间，可以为空
+    completed_at DATETIME,
+    
+    -- 创建时间
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- 更新时间
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    -- 是否已删除（软删除），默认为false
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- 8. 为待办事项表创建索引（MVP版本）
+-- 为couple_id创建索引（经常按情侣查询）
+CREATE INDEX idx_todo_couple_id ON todo_items(couple_id);
+
+-- 为creator_id创建索引（经常按创建者查询）
+CREATE INDEX idx_todo_creator_id ON todo_items(creator_id);
+
+-- 为status创建索引（经常按状态查询）
+CREATE INDEX idx_todo_status ON todo_items(status);
+
+-- 为软删除查询创建索引
+CREATE INDEX idx_todo_deleted ON todo_items(is_deleted);
+
+-- 为couple_id和status创建组合索引
+CREATE INDEX idx_todo_couple_status ON todo_items(couple_id, status);
+
+-- 9. 插入一些测试待办事项数据（MVP版本）
+INSERT INTO todo_items (couple_id, creator_id, title, description, status) VALUES 
+(1, 1, '买生日礼物', '为另一半准备生日礼物，要用心挑选', 'PENDING'),
+(1, 2, '准备约会计划', '计划一次浪漫的约会，包括餐厅和活动', 'PENDING'),
+(1, 1, '整理照片', '整理我们的合照，制作相册', 'PENDING'),
+(1, 2, '学习新技能', '一起学习烹饪，为对方做一顿饭', 'PENDING'),
+(1, 1, '制定旅行计划', '计划一次短途旅行，放松心情', 'COMPLETED');
+
+-- 10. 查看创建的表结构
+DESCRIBE todo_items;
+
+-- 11. 查看插入的测试数据
+SELECT * FROM todo_items;
+
+-- 12. 查看插入的测试数据
 SELECT * FROM anniversaries;
 
 -- ==========================================
