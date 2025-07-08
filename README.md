@@ -36,6 +36,42 @@ LoveDiary 是一个专为情侣设计的纪念日管理系统，帮助情侣记�
 - ✅ 搜索功能
 - ✅ 统计信息
 
+### 照片管理
+- ✅ 相册创建和管理
+- ✅ 照片和视频上传
+- ✅ 本地文件存储
+- ✅ 收藏功能
+- ✅ 搜索和分类
+- ✅ 文件访问和下载
+- ✅ iOS格式支持（LIVP实况图片、HEIC图片）
+
+### 标签管理
+- ✅ 自定义标签创建和管理
+- ✅ 标签颜色设置
+- ✅ 照片/视频标签分配
+- ✅ 按标签筛选照片
+- ✅ 标签唯一性验证
+
+#### 前端处理建议
+后端不处理照片的EXIF元数据，建议前端（iOS Swift）进行以下处理：
+
+1. **位置信息提取**：
+   - 使用`PHAsset`获取照片的EXIF信息
+   - 从EXIF中提取GPS坐标
+   - 使用`CLGeocoder`进行地理编码，转换为地址信息
+   - 将地址信息传递给后端
+
+2. **标签生成**：
+   - 根据拍摄时间生成时间标签（如"2024年春天"、"周末"等）
+   - 根据地点信息生成地点标签
+   - 根据照片内容使用AI识别生成内容标签
+   - 将生成的标签传递给后端
+
+3. **iOS格式处理**：
+   - 使用`PHImageManager`处理HEIC格式转换
+   - 使用`PHLivePhoto`处理实况图片
+   - 转换为标准格式后上传
+
 ### 系统功能
 - ✅ 健康检查接口
 - ✅ API文档自动生成
@@ -45,7 +81,7 @@ LoveDiary 是一个专为情侣设计的纪念日管理系统，帮助情侣记�
 ## 技术栈
 
 - **后端框架**: Spring Boot 3.x
-- **数据库**: H2 (开发环境)
+- **数据库**: MySQL 8.0
 - **ORM**: Spring Data JPA
 - **认证**: JWT (JSON Web Token)
 - **文件上传**: Spring Multipart
@@ -65,6 +101,10 @@ src/main/java/com/example/backend/
 │   ├── LoveInfoController.java    # 恋爱信息API
 │   ├── AnniversaryController.java # 纪念日管理API
 │   ├── TodoItemController.java    # 待办事项管理API
+│   ├── AlbumController.java       # 相册管理API
+│   ├── PhotoController.java       # 照片管理API
+│   ├── TagController.java         # 标签管理API
+│   ├── FileController.java        # 文件访问API
 │   ├── HealthController.java      # 健康检查API
 │   ├── ApiDocController.java      # API文档API
 │   └── GlobalExceptionHandler.java # 全局异常处理
@@ -74,17 +114,30 @@ src/main/java/com/example/backend/
 │   ├── CoupleService.java         # 情侣业务逻辑
 │   ├── LoveInfoService.java       # 恋爱信息业务逻辑
 │   ├── AnniversaryService.java    # 纪念日业务逻辑
-│   └── TodoItemService.java       # 待办事项业务逻辑
+│   ├── TodoItemService.java       # 待办事项业务逻辑
+│   ├── AlbumService.java          # 相册业务逻辑
+│   ├── PhotoService.java          # 照片业务逻辑
+│   ├── TagService.java            # 标签业务逻辑
+│   ├── FileStorageService.java    # 文件存储服务接口
+│   └── LocalFileStorageService.java # 本地文件存储实现
 ├── model/                 # 实体类
 │   ├── User.java                 # 用户实体
 │   ├── Couple.java               # 情侣实体
 │   ├── Anniversary.java          # 纪念日实体
-│   └── TodoItem.java             # 待办事项实体
+│   ├── TodoItem.java             # 待办事项实体
+│   ├── Album.java                # 相册实体
+│   ├── Photo.java                # 照片实体
+│   ├── Tag.java                  # 标签实体
+│   └── PhotoTag.java             # 照片-标签关系实体
 ├── repository/            # 数据访问层
 │   ├── UserRepository.java       # 用户数据访问
 │   ├── CoupleRepository.java     # 情侣数据访问
 │   ├── AnniversaryRepository.java # 纪念日数据访问
-│   └── TodoItemRepository.java   # 待办事项数据访问
+│   ├── TodoItemRepository.java   # 待办事项数据访问
+│   ├── AlbumRepository.java      # 相册数据访问
+│   ├── PhotoRepository.java      # 照片数据访问
+│   ├── TagRepository.java        # 标签数据访问
+│   └── PhotoTagRepository.java   # 照片-标签关系数据访问
 └── dto/                   # 数据传输对象
     └── LoveInfoDTO.java          # 恋爱信息DTO
 ```
@@ -146,6 +199,37 @@ src/main/java/com/example/backend/
 - `GET /couple/{coupleId}/search` - 搜索待办事项
 - `GET /couple/{coupleId}/stats` - 获取待办事项统计
 
+### 相册管理 API (`/api/albums`)
+- `POST /` - 创建相册
+- `GET /` - 获取相册列表
+- `GET /{albumId}` - 获取相册详情
+- `PUT /{albumId}` - 更新相册
+- `DELETE /{albumId}` - 删除相册
+- `GET /search` - 搜索相册
+- `GET /stats` - 获取统计信息
+
+### 照片管理 API (`/api/photos`)
+- `POST /upload` - 上传照片
+- `GET /` - 获取照片列表
+- `GET /{photoId}` - 获取照片详情
+- `PUT /{photoId}` - 更新照片信息
+- `DELETE /{photoId}` - 删除照片
+- `GET /search` - 搜索照片
+- `POST /{photoId}/favorite` - 切换收藏状态
+- `GET /favorites` - 获取收藏照片
+- `GET /album/{albumId}` - 获取相册照片
+
+### 标签管理 API (`/api/tags`)
+- `POST /` - 创建标签
+- `GET /` - 获取情侣的所有标签
+- `PUT /{tagId}` - 更新标签
+- `DELETE /{tagId}` - 删除标签
+- `POST /assign` - 为照片分配标签
+
+### 文件访问 API (`/files`)
+- `GET /{filePath}` - 下载文件
+- `GET /info/{filePath}` - 获取文件信息
+
 ### 系统管理 API
 - `GET /api/health` - 健康检查
 - `GET /api/health/detailed` - 详细健康检查
@@ -159,6 +243,7 @@ src/main/java/com/example/backend/
 ### 环境要求
 - JDK 17+
 - Maven 3.6+
+- MySQL 8.0+
 
 ### 启动步骤
 
@@ -168,17 +253,21 @@ git clone <repository-url>
 cd LoveDiary
 ```
 
-2. **编译项目**
+2. **配置数据库**
+- 创建MySQL数据库：`love_db`
+- 执行数据库脚本：`database_setup.sql`
+
+3. **编译项目**
 ```bash
 mvn clean compile
 ```
 
-3. **启动应用**
+4. **启动应用**
 ```bash
 mvn spring-boot:run
 ```
 
-4. **访问应用**
+5. **访问应用**
 - 应用地址: http://localhost:8080
 - API文档: http://localhost:8080/api/docs
 - 健康检查: http://localhost:8080/api/health
@@ -187,8 +276,11 @@ mvn spring-boot:run
 
 使用提供的测试脚本：
 ```bash
-chmod +x test_api.sh
+# 基础功能测试
 ./test_api.sh
+
+# 照片管理功能测试
+# 使用 photo_management_test.http 文件在Postman中测试
 ```
 
 或使用curl手动测试：
@@ -248,6 +340,54 @@ curl -X POST http://localhost:8080/api/users/login \
 - created_at: 创建时间
 - updated_at: 更新时间
 
+### 待办事项表 (todo_items)
+- id: 主键
+- couple_id: 情侣ID
+- creator_id: 创建者ID
+- title: 标题
+- description: 描述
+- status: 状态（PENDING/COMPLETED）
+- created_at: 创建时间
+- updated_at: 更新时间
+- is_deleted: 软删除标记
+
+### 相册表 (albums)
+- id: 主键
+- couple_id: 情侣ID
+- name: 相册名称
+- description: 相册描述
+- cover_photo_id: 封面照片ID
+- created_at: 创建时间
+- updated_at: 更新时间
+- is_deleted: 软删除标记
+
+### 照片表 (photos)
+- id: 主键
+- couple_id: 情侣ID
+- album_id: 相册ID
+- creator_id: 创建者ID
+- file_name: 文件名
+- original_name: 原始文件名
+- file_path: 文件路径
+- file_size: 文件大小
+- file_type: 文件类型（PHOTO/VIDEO）
+- mime_type: MIME类型
+- width: 图片宽度
+- height: 图片高度
+- duration: 视频时长
+- description: 照片描述
+- location: 拍摄地点
+- tags: 标签
+- is_favorite: 是否收藏
+- created_at: 创建时间
+- updated_at: 更新时间
+- is_deleted: 软删除标记
+
+**支持的文件格式：**
+- 图片：JPG, JPEG, PNG, GIF, BMP, WebP, HEIC, HEIF, LIVP
+- 视频：MP4, AVI, MOV, WMV, FLV, WebM, M4V, 3GP
+- iOS特殊格式：LIVP（实况图片）、HEIC/HEIF（高效图片格式）
+
 ## 认证机制
 
 ### JWT令牌
@@ -284,13 +424,13 @@ curl -X POST http://localhost:8080/api/users/login \
 ## 部署说明
 
 ### 开发环境
-- 数据库: H2内存数据库
+- 数据库: MySQL 8.0
 - 文件存储: 本地文件系统
 - 端口: 8080
 
 ### 生产环境建议
 - 数据库: MySQL/PostgreSQL
-- 文件存储: 云存储服务
+- 文件存储: 云存储服务（阿里云OSS、腾讯云COS等）
 - 反向代理: Nginx
 - 容器化: Docker
 
@@ -301,6 +441,8 @@ curl -X POST http://localhost:8080/api/users/login \
 - ✅ 情侣匹配
 - ✅ 纪念日管理
 - ✅ 头像上传
+- ✅ 待办事项管理
+- ✅ 相册和照片管理
 - ✅ API文档
 - ✅ 健康检查
 
