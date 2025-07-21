@@ -263,10 +263,6 @@ public class PhotoService {
                 photo.setLocation((String) updateData.get("location"));
             }
             
-            if (updateData.containsKey("tags")) {
-                photo.setTags((String) updateData.get("tags"));
-            }
-            
             if (updateData.containsKey("isFavorite")) {
                 photo.setIsFavorite((Boolean) updateData.get("isFavorite"));
             }
@@ -386,7 +382,7 @@ public class PhotoService {
             
             result.put("success", true);
             result.put("message", message);
-            result.put("photo", createPhotoInfo(updatedPhoto));
+//            result.put("photo", createPhotoInfo(updatedPhoto));
             
         } catch (Exception e) {
             result.put("success", false);

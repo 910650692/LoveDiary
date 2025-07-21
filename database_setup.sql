@@ -201,9 +201,6 @@ CREATE TABLE IF NOT EXISTS photos (
     -- 拍摄地点，最大200字符，可以为空
     location VARCHAR(200),
     
-    -- 标签（用逗号分隔），最大500字符，可以为空
-    tags VARCHAR(500),
-    
     -- 是否收藏，默认为false
     is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
     

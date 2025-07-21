@@ -23,7 +23,161 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - `GET /api/health` - 健康检查
 - `GET /api/docs` - API文档
 
-## 1. 用户管理 API
+## 1. 生理期记录 API
+
+### 1.1 创建生理期记录
+**POST** `/api/period-records`
+
+**认证**: 需要JWT Token
+
+**请求体**:
+```json
+{
+  "startDate": "2024-01-01",
+  "endDate": "2024-01-05"
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "生理期记录创建成功",
+  "data": {
+    "id": 1,
+    "userId": 1,
+    "coupleId": 1,
+    "startDate": "2024-01-01",
+    "endDate": "2024-01-05",
+    "cycleLength": null,
+    "isPredicted": false,
+    "createdAt": "2024-01-01T10:00:00"
+  }
+}
+```
+
+### 1.2 更新生理期记录
+**PUT** `/api/period-records/{id}`
+
+**认证**: 需要JWT Token
+
+**请求体**:
+```json
+{
+  "startDate": "2024-01-01",
+  "endDate": "2024-01-06"
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "生理期记录更新成功",
+  "data": {
+    "id": 1,
+    "startDate": "2024-01-01",
+    "endDate": "2024-01-06",
+    "cycleLength": 28
+  }
+}
+```
+
+### 1.3 删除生理期记录
+**DELETE** `/api/period-records/{id}`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "生理期记录删除成功"
+}
+```
+
+### 1.4 获取生理期记录列表
+**GET** `/api/period-records`
+
+**认证**: 需要JWT Token
+
+**查询参数**:
+- `startDate` (可选): 开始日期，格式：YYYY-MM-DD
+- `endDate` (可选): 结束日期，格式：YYYY-MM-DD  
+- `isPredicted` (可选): 是否预测记录，true/false
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "startDate": "2024-01-01",
+      "endDate": "2024-01-05",
+      "cycleLength": 28,
+      "isPredicted": false
+    }
+  ],
+  "count": 1
+}
+```
+
+### 1.5 获取生理期预测信息
+**GET** `/api/period-records/prediction`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "canPredict": true,
+    "nextStartDate": "2024-01-29",
+    "predictedStartRange": {
+      "earliest": "2024-01-27",
+      "latest": "2024-01-31"
+    },
+    "averageCycleLength": 28,
+    "cycleRegularity": "规律",
+    "basedOnCycles": 3
+  }
+}
+```
+
+### 1.6 生成预测记录
+**POST** `/api/period-records/generate-predictions`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "预测记录生成成功"
+}
+```
+
+### 1.7 获取用户统计信息
+**GET** `/api/period-records/statistics`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "totalActualRecords": 5,
+    "totalPredictedRecords": 3,
+    "canPredict": true,
+    "lastRecordDate": "2024-01-01"
+  }
+}
+```
+
+## 2. 用户管理 API
 
 ### 1.1 用户注册
 **POST** `/api/users/register`
@@ -1289,7 +1443,6 @@ albumId: 1 (可选)
 file: [图片或视频文件]
 description: 我们的第一张合照 (可选)
 location: 北京 (可选)
-tagIds: [1, 2, 3] (可选，标签ID列表)
 ```
 
 **响应**:

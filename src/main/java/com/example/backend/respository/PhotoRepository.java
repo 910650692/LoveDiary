@@ -48,7 +48,7 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
     /**
      * 根据标题、描述或标签搜索照片
      */
-    @Query("SELECT p FROM Photo p WHERE p.coupleId = :coupleId AND (p.description LIKE %:keyword% OR p.location LIKE %:keyword% OR p.tags LIKE %:keyword%) AND p.isDeleted = false ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Photo p WHERE p.coupleId = :coupleId AND (p.description LIKE %:keyword% OR p.location LIKE %:keyword% ) AND p.isDeleted = false ORDER BY p.createdAt DESC")
     List<Photo> searchByKeyword(@Param("coupleId") Long coupleId, @Param("keyword") String keyword);
     
     /**

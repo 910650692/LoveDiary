@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", "系统发生未知错误，请稍后重试");
         errorResponse.put("error", "Exception");
         errorResponse.put("timestamp", System.currentTimeMillis());
-        
+        ex.printStackTrace();
         // 在开发环境下可以返回详细错误信息
         if (isDevelopmentEnvironment()) {
             errorResponse.put("details", ex.getMessage());

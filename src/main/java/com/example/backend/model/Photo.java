@@ -103,12 +103,6 @@ public class Photo {
     private String location;
     
     /**
-     * 标签（用逗号分隔）
-     */
-    @Column(length = 500)
-    private String tags;
-    
-    /**
      * 是否收藏
      */
     @Column(name = "is_favorite", nullable = false)
@@ -149,27 +143,6 @@ public class Photo {
     public enum FileType {
         PHOTO,  // 照片
         VIDEO   // 视频
-    }
-    
-    /**
-     * 获取标签数组
-     */
-    public String[] getTagArray() {
-        if (tags == null || tags.trim().isEmpty()) {
-            return new String[0];
-        }
-        return tags.split(",");
-    }
-    
-    /**
-     * 设置标签数组
-     */
-    public void setTagArray(String[] tagArray) {
-        if (tagArray == null || tagArray.length == 0) {
-            this.tags = null;
-        } else {
-            this.tags = String.join(",", tagArray);
-        }
     }
     
     /**
