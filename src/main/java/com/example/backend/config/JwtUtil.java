@@ -2,14 +2,18 @@ package com.example.backend.config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import jakarta.servlet.http.HttpServletRequest;
+import com.example.backend.respository.UserRepository;
+import com.example.backend.model.User;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * JWT工具类
@@ -17,6 +21,9 @@ import java.util.Map;
  */
 @Component
 public class JwtUtil {
+    
+    @Autowired
+    private UserRepository userRepository;
     
     // 64字节安全密钥（用Keys.secretKeyFor(SignatureAlgorithm.HS512)生成）
     private static final String SECRET_KEY = "2vQw1n6Qw8JZk3pX9r5sT7uV0y2bC4eF6h8jK0mN2q4sT6vX8zA1C3E5G7I9K0M2P4";
@@ -123,6 +130,32 @@ public class JwtUtil {
             return expiration.getTime() - System.currentTimeMillis();
         } catch (Exception e) {
             return 0;
+        }
+    }
+    
+    /**
+     * 从HTTP请求中获取情侣ID
+     */
+    public Long getCoupleIdFromRequest(HttpServletRequest request) {
+        try {
+            String token = getTokenFromRequest(request);
+            if (token == null) {
+                return null;
+            }
+            
+            Long userId = getUserIdFromToken(token);
+            if (userId == null) {
+                return null;
+            }
+            
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (!userOpt.isPresent()) {
+                return null;
+            }
+            
+            return userOpt.get().getCoupleId();
+        } catch (Exception e) {
+            return null;
         }
     }
 } 

@@ -7,6 +7,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 class LoveDiaryApplicationTests {
 
 	@Test
+	void testSout(){
+		System.out.println("测试下输出");
+	}
+	@Test
 	void contextLoads() {
 	}
 
