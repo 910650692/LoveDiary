@@ -75,14 +75,15 @@ public class AlbumController {
     
     /**
      * 删除相册
-     * DELETE /api/albums/{albumId}?userId={userId}
+     * DELETE /api/albums/{albumId}?userId={userId}&deletePhotos={true/false}
      */
     @DeleteMapping("/{albumId}")
     public ResponseEntity<Map<String, Object>> deleteAlbum(
             @PathVariable Long albumId,
-            @RequestParam Long userId) {
+            @RequestParam Long userId,
+            @RequestParam(defaultValue = "false") boolean deletePhotos) {
         
-        Map<String, Object> result = albumService.deleteAlbum(albumId, userId);
+        Map<String, Object> result = albumService.deleteAlbum(albumId, userId, deletePhotos);
         return ResponseEntity.ok(result);
     }
     

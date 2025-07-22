@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.List;
 
 /**
  * 照片控制器（MVP版本）
@@ -127,6 +128,22 @@ public class PhotoController {
             @RequestParam Long userId) {
         
         Map<String, Object> result = photoService.deletePhoto(photoId, userId);
+        return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * 批量删除照片
+     * DELETE /api/photos/batch?userId={userId}
+     */
+    @DeleteMapping("/batch")
+    public ResponseEntity<Map<String, Object>> batchDeletePhotos(
+            @RequestParam Long userId,
+            @RequestBody Map<String, Object> requestData) {
+        
+        @SuppressWarnings("unchecked")
+        List<Long> photoIds = (List<Long>) requestData.get("photoIds");
+        
+        Map<String, Object> result = photoService.batchDeletePhotos(photoIds, userId);
         return ResponseEntity.ok(result);
     }
 } 

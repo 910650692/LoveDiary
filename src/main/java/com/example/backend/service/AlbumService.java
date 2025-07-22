@@ -2,9 +2,11 @@ package com.example.backend.service;
 
 import com.example.backend.model.Album;
 import com.example.backend.model.Couple;
+import com.example.backend.model.Photo;
 import com.example.backend.respository.AlbumRepository;
 import com.example.backend.respository.CoupleRepository;
 import com.example.backend.respository.PhotoRepository;
+import com.example.backend.service.PhotoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,9 @@ public class AlbumService {
     
     @Autowired
     private PhotoRepository photoRepository;
+    
+    @Autowired
+    private PhotoService photoService;
     
     /**
      * 创建相册
@@ -191,7 +196,7 @@ public class AlbumService {
     /**
      * 删除相册
      */
-    public Map<String, Object> deleteAlbum(Long albumId, Long userId) {
+    public Map<String, Object> deleteAlbum(Long albumId, Long userId, boolean deletePhotos) {
         Map<String, Object> result = new HashMap<>();
         
         try {
@@ -211,19 +216,44 @@ public class AlbumService {
                 return result;
             }
             
-            // 检查相册是否有照片
-            long photoCount = photoRepository.countByAlbumIdAndIsDeletedFalse(albumId);
-            if (photoCount > 0) {
+            // 获取相册中的照片
+            List<Photo> photos = photoRepository.findByAlbumIdAndIsDeletedFalse(albumId);
+            
+            if (!deletePhotos && !photos.isEmpty()) {
+                // 如果不删除照片且相册中有照片，则不允许删除相册
                 result.put("success", false);
-                result.put("message", "相册中还有照片，请先删除照片");
+                result.put("message", "相册中还有照片，请先删除照片或选择级联删除");
+                result.put("photoCount", photos.size());
                 return result;
             }
             
+            if (deletePhotos && !photos.isEmpty()) {
+                // 批量删除相册中的所有照片
+                List<Long> photoIds = photos.stream()
+                        .map(Photo::getId)
+                        .collect(Collectors.toList());
+                
+                Map<String, Object> batchDeleteResult = photoService.batchDeletePhotos(photoIds, userId);
+                
+                // 如果批量删除有失败的，记录失败信息但继续删除相册
+                if (batchDeleteResult.containsKey("failureCount") && 
+                    (Integer) batchDeleteResult.get("failureCount") > 0) {
+                    result.put("photoDeleteWarning", "部分照片删除失败");
+                    result.put("photoDeleteDetails", batchDeleteResult);
+                }
+            }
+            
+            // 删除相册
             album.setIsDeleted(true);
             albumRepository.save(album);
             
+            String message = deletePhotos && !photos.isEmpty() 
+                ? String.format("相册及其 %d 张照片删除成功", photos.size())
+                : "相册删除成功";
+            
             result.put("success", true);
-            result.put("message", "相册删除成功");
+            result.put("message", message);
+            result.put("deletedPhotoCount", deletePhotos ? photos.size() : 0);
             
         } catch (Exception e) {
             result.put("success", false);

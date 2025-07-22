@@ -392,6 +392,79 @@ public class PhotoService {
         return result;
     }
     
+    /**
+     * 批量删除照片
+     */
+    public Map<String, Object> batchDeletePhotos(List<Long> photoIds, Long userId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            if (photoIds == null || photoIds.isEmpty()) {
+                result.put("success", false);
+                result.put("message", "请选择要删除的照片");
+                return result;
+            }
+            
+            List<Map<String, Object>> successList = new ArrayList<>();
+            List<Map<String, Object>> failureList = new ArrayList<>();
+            
+            for (Long photoId : photoIds) {
+                try {
+                    Optional<Photo> photoOpt = photoRepository.findByIdAndIsDeletedFalse(photoId);
+                    if (!photoOpt.isPresent()) {
+                        Map<String, Object> failure = new HashMap<>();
+                        failure.put("photoId", photoId);
+                        failure.put("reason", "照片不存在");
+                        failureList.add(failure);
+                        continue;
+                    }
+                    
+                    Photo photo = photoOpt.get();
+                    
+                    if (!validateCoupleAccess(photo.getCoupleId(), userId)) {
+                        Map<String, Object> failure = new HashMap<>();
+                        failure.put("photoId", photoId);
+                        failure.put("reason", "无权删除此照片");
+                        failureList.add(failure);
+                        continue;
+                    }
+                    
+                    // 删除物理文件
+                    fileStorageService.delete(photo.getFilePath());
+                    
+                    // 软删除数据库记录
+                    photo.setIsDeleted(true);
+                    photoRepository.save(photo);
+                    
+                    Map<String, Object> success = new HashMap<>();
+                    success.put("photoId", photoId);
+                    success.put("fileName", photo.getOriginalName());
+                    successList.add(success);
+                    
+                } catch (Exception e) {
+                    Map<String, Object> failure = new HashMap<>();
+                    failure.put("photoId", photoId);
+                    failure.put("reason", "删除失败：" + e.getMessage());
+                    failureList.add(failure);
+                }
+            }
+            
+            result.put("success", true);
+            result.put("message", String.format("批量删除完成，成功 %d 张，失败 %d 张", 
+                    successList.size(), failureList.size()));
+            result.put("successList", successList);
+            result.put("failureList", failureList);
+            result.put("successCount", successList.size());
+            result.put("failureCount", failureList.size());
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "批量删除失败：" + e.getMessage());
+        }
+        
+        return result;
+    }
+    
     // ========== 私有辅助方法 ==========
     
     /**
