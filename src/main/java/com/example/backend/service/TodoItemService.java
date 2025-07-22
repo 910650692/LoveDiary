@@ -4,10 +4,7 @@ import com.example.backend.model.TodoItem;
 import com.example.backend.model.Couple;
 import com.example.backend.respository.TodoItemRepository;
 import com.example.backend.respository.CoupleRepository;
-import com.example.backend.event.TodoCompletedEvent;
-import com.example.backend.event.TodoCreatedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,9 +25,6 @@ public class TodoItemService {
     
     @Autowired
     private CoupleRepository coupleRepository;
-    
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
     
     /**
      * 创建待办事项
@@ -63,17 +57,9 @@ public class TodoItemService {
             
             TodoItem savedTodo = todoItemRepository.save(todoItem);
             
-            // 发布TodoCreated事件
-            eventPublisher.publishEvent(new TodoCreatedEvent(
-                coupleId, 
-                creatorId, 
-                savedTodo.getId(), 
-                savedTodo.getTitle()
-            ));
-            
             result.put("success", true);
             result.put("message", "待办事项创建成功");
-            result.put("data", createTodoItemInfo(savedTodo));
+            result.put("todoItem", createTodoItemInfo(savedTodo));
             
         } catch (Exception e) {
             result.put("success", false);
@@ -103,7 +89,7 @@ public class TodoItemService {
                     .collect(Collectors.toList());
             
             result.put("success", true);
-            result.put("data", todoList);
+            result.put("todoItems", todoList);
             result.put("count", todoList.size());
             
         } catch (Exception e) {
@@ -142,7 +128,7 @@ public class TodoItemService {
                     .collect(Collectors.toList());
             
             result.put("success", true);
-            result.put("data", todoList);
+            result.put("todoItems", todoList);
             result.put("count", todoList.size());
             result.put("status", status);
             
@@ -190,7 +176,7 @@ public class TodoItemService {
             
             result.put("success", true);
             result.put("message", "待办事项更新成功");
-            result.put("data", createTodoItemInfo(updatedTodo));
+            result.put("todoItem", createTodoItemInfo(updatedTodo));
             
         } catch (Exception e) {
             result.put("success", false);
@@ -235,18 +221,9 @@ public class TodoItemService {
             
             TodoItem completedTodo = todoItemRepository.save(todoItem);
             
-            // 发布TodoCompleted事件
-            eventPublisher.publishEvent(new TodoCompletedEvent(
-                todoItem.getCoupleId(),
-                userId,
-                todoItem.getId(),
-                todoItem.getTitle(),
-                todoItem.getDescription()
-            ));
-            
             result.put("success", true);
             result.put("message", "待办事项已完成");
-            result.put("data", createTodoItemInfo(completedTodo));
+            result.put("todoItem", createTodoItemInfo(completedTodo));
             
         } catch (Exception e) {
             result.put("success", false);
@@ -312,7 +289,7 @@ public class TodoItemService {
                     .collect(Collectors.toList());
             
             result.put("success", true);
-            result.put("data", todoList);
+            result.put("todoItems", todoList);
             result.put("count", todoList.size());
             result.put("keyword", keyword);
             

@@ -146,11 +146,4 @@ public class User {
     public boolean isMatched() {
         return status == UserStatus.MATCHED && coupleId != null;
     }
-    
-    /**
-     * 获取情侣ID
-     */
-    public Long getCoupleId() {
-        return coupleId;
-    }
 } 

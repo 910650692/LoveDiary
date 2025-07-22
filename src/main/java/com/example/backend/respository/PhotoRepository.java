@@ -26,11 +26,6 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
     List<Photo> findByAlbumIdAndIsDeletedFalseOrderByCreatedAtDesc(Long albumId);
     
     /**
-     * 根据相册ID查找照片（不排序）
-     */
-    List<Photo> findByAlbumIdAndIsDeletedFalse(Long albumId);
-    
-    /**
      * 根据情侣ID和相册ID查找照片
      */
     List<Photo> findByCoupleIdAndAlbumIdAndIsDeletedFalseOrderByCreatedAtDesc(Long coupleId, Long albumId);

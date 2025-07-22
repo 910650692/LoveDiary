@@ -34,9 +34,8 @@ public class TodoItemController {
             @RequestBody Map<String, Object> todoData,
             HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        Integer coupleId = (Integer) todoData.get("coupleId");
-        Long coupleID = coupleId.longValue();
-        return todoItemService.createTodoItem(coupleID, userId, todoData);
+        Long coupleId = (Long) todoData.get("coupleId");
+        return todoItemService.createTodoItem(coupleId, userId, todoData);
     }
     
     /**
