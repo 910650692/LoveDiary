@@ -1872,7 +1872,545 @@ curl -X POST "http://localhost:8080/api/tags?coupleId=1&userId=1&name=&color=%23
 }
 ```
 
+## 13. 动态管理 API
+
+### 13.1 获取最近动态
+**GET** `/api/activities/recent`
+
+**认证**: 需要JWT Token
+
+**查询参数**:
+- `limit` (可选): 限制返回数量，默认20
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "activityType": "TODO_COMPLETED",
+      "title": "完成了待办事项",
+      "description": "完成了买菜",
+      "userId": 1,
+      "coupleId": 1,
+      "createdAt": "2024-01-01T10:30:00",
+      "icon": "✓",
+      "referenceId": 1,
+      "referenceType": "TODO"
+    }
+  ],
+  "total": 1,
+  "message": "获取最近动态成功"
+}
+```
+
+### 13.2 获取动态摘要
+**GET** `/api/activities/summary`
+
+**认证**: 需要JWT Token
+
+**查询参数**:
+- `limit` (可选): 限制返回数量，默认5
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "icon": "✓",
+      "title": "完成了待办事项",
+      "description": "完成了买菜",
+      "relativeTime": "2分钟前",
+      "createdAt": "2024-01-01T10:30:00",
+      "activityType": "TODO_COMPLETED"
+    }
+  ],
+  "total": 1,
+  "message": "获取动态摘要成功"
+}
+```
+
+### 13.3 获取动态时间线（分页）
+**GET** `/api/activities/timeline`
+
+**认证**: 需要JWT Token
+
+**查询参数**:
+- `page` (可选): 页码，默认0
+- `size` (可选): 每页大小，默认10
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [...],
+  "totalElements": 50,
+  "totalPages": 5,
+  "currentPage": 0,
+  "pageSize": 10,
+  "message": "获取动态时间线成功"
+}
+```
+
+### 13.4 获取今天的动态
+**GET** `/api/activities/today`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [...],
+  "total": 5,
+  "message": "获取今天动态成功"
+}
+```
+
+### 13.5 获取本周动态
+**GET** `/api/activities/weekly`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [...],
+  "total": 15,
+  "message": "获取本周动态成功"
+}
+```
+
+### 13.6 根据类型获取动态
+**GET** `/api/activities/type/{activityType}`
+
+**认证**: 需要JWT Token
+
+**路径参数**:
+- `activityType`: 动态类型 (TODO_COMPLETED, TODO_CREATED, PHOTO_UPLOADED, PHOTO_FAVORITED, ANNIVERSARY_CREATED, ANNIVERSARY_REMINDER, LOVE_MILESTONE, PERIOD_RECORD, ALBUM_CREATED, USER_JOINED, LOVE_DATE_SET)
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [...],
+  "total": 10,
+  "activityType": "待办完成",
+  "message": "获取待办完成动态成功"
+}
+```
+
+### 13.7 根据用户获取动态
+**GET** `/api/activities/user/{userId}`
+
+**认证**: 需要JWT Token
+
+**路径参数**:
+- `userId`: 用户ID
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [...],
+  "total": 25,
+  "userId": 1,
+  "message": "获取用户动态成功"
+}
+```
+
+### 13.8 根据时间范围获取动态
+**GET** `/api/activities/range`
+
+**认证**: 需要JWT Token
+
+**查询参数**:
+- `startDate`: 开始日期时间 (ISO格式: 2024-01-01T00:00:00)
+- `endDate`: 结束日期时间 (ISO格式: 2024-01-31T23:59:59)
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": [...],
+  "total": 30,
+  "startDate": "2024-01-01T00:00:00",
+  "endDate": "2024-01-31T23:59:59",
+  "message": "获取时间范围内动态成功"
+}
+```
+
+### 13.9 获取动态统计信息
+**GET** `/api/activities/statistics`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "totalCount": 150,
+    "todayCount": 5,
+    "weeklyCount": 25,
+    "activeDays": 45,
+    "typeDistribution": {
+      "TODO_COMPLETED": 50,
+      "PHOTO_UPLOADED": 30,
+      "ANNIVERSARY_CREATED": 10,
+      "PHOTO_FAVORITED": 20,
+      "ALBUM_CREATED": 5,
+      "LOVE_MILESTONE": 3
+    },
+    "recentActivity": "2024-01-01T15:30:00"
+  },
+  "message": "获取动态统计成功"
+}
+```
+
+### 13.10 手动创建动态
+**POST** `/api/activities`
+
+**认证**: 需要JWT Token
+
+**请求体**:
+```json
+{
+  "activityType": "TODO_COMPLETED",
+  "title": "完成了重要任务",
+  "description": "完成了今天的所有待办事项",
+  "referenceId": 1,
+  "referenceType": "TODO"
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "activityType": "TODO_COMPLETED",
+    "title": "完成了重要任务",
+    "description": "完成了今天的所有待办事项",
+    "userId": 1,
+    "coupleId": 1,
+    "referenceId": 1,
+    "referenceType": "TODO",
+    "createdAt": "2024-01-01T15:30:00"
+  },
+  "message": "创建动态成功"
+}
+```
+
+### 13.11 删除动态
+**DELETE** `/api/activities/{id}`
+
+**认证**: 需要JWT Token
+
+**路径参数**:
+- `id`: 动态ID
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "删除动态成功"
+}
+```
+
+### 13.12 获取所有动态类型
+**GET** `/api/activities/types`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "TODO_COMPLETED": "待办完成",
+    "TODO_CREATED": "待办创建",
+    "PHOTO_UPLOADED": "照片上传",
+    "PHOTO_FAVORITED": "照片收藏",
+    "ANNIVERSARY_CREATED": "纪念日创建",
+    "ANNIVERSARY_REMINDER": "纪念日提醒",
+    "LOVE_MILESTONE": "恋爱里程碑",
+    "PERIOD_RECORD": "生理期记录",
+    "ALBUM_CREATED": "相册创建",
+    "USER_JOINED": "用户加入",
+    "LOVE_DATE_SET": "恋爱日期设置"
+  },
+  "message": "获取动态类型成功"
+}
+```
+
+## 14. 情侣管理增强功能 API
+
+### 14.1 获取情侣详细信息
+**GET** `/api/couples/{coupleId}`
+
+**认证**: 需要JWT Token
+
+**路径参数**:
+- `coupleId`: 情侣ID
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "coupleId": 1,
+    "status": "ACTIVE",
+    "user1": {
+      "id": 1,
+      "nickname": "小明",
+      "gender": "MALE",
+      "avatarUrl": "/images/user1.jpg"
+    },
+    "user2": {
+      "id": 2,
+      "nickname": "小红",
+      "gender": "FEMALE",
+      "avatarUrl": "/images/user2.jpg"
+    },
+    "matchDate": "2024-01-01T10:30:00",
+    "loveStartDate": "2024-01-01",
+    "relationshipDuration": {
+      "days": 365,
+      "months": 12,
+      "years": 1
+    }
+  }
+}
+```
+
+### 14.2 获取当前用户的情侣详细信息
+**GET** `/api/couples/me`
+
+**认证**: 需要JWT Token
+
+**响应**: 同上格式
+
+### 14.3 获取情侣状态
+**GET** `/api/couples/{coupleId}/status`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "coupleId": 1,
+    "status": "ACTIVE",
+    "isActive": true,
+    "lastActivity": "2024-01-01T15:30:00"
+  }
+}
+```
+
+### 14.4 更新情侣状态
+**PUT** `/api/couples/{coupleId}/status`
+
+**认证**: 需要JWT Token
+
+**请求体**:
+```json
+{
+  "status": "ACTIVE"
+}
+```
+
+**响应**:
+```json
+{
+  "success": true,
+  "message": "情侣状态更新成功",
+  "data": {
+    "coupleId": 1,
+    "status": "ACTIVE",
+    "updatedAt": "2024-01-01T15:30:00"
+  }
+}
+```
+
+### 14.5 获取情侣统计信息
+**GET** `/api/couples/{coupleId}/stats`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "coupleId": 1,
+    "relationshipDays": 365,
+    "totalPhotos": 150,
+    "totalAnniversaries": 5,
+    "totalTodos": 25,
+    "completedTodos": 20,
+    "favoritePhotos": 30,
+    "recentActivities": 45,
+    "milestones": [
+      {"type": "DAYS_100", "date": "2024-04-10"},
+      {"type": "DAYS_365", "date": "2024-12-31"}
+    ]
+  }
+}
+```
+
+### 14.6 获取当前用户的情侣统计信息
+**GET** `/api/couples/me/stats`
+
+**认证**: 需要JWT Token
+
+**响应**: 同上格式
+
+### 14.7 获取情侣成员信息
+**GET** `/api/couples/{coupleId}/members`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "coupleId": 1,
+    "members": [
+      {
+        "id": 1,
+        "nickname": "小明",
+        "email": "xiaoming@example.com",
+        "gender": "MALE",
+        "birthDate": "1995-06-15",
+        "avatarUrl": "/images/user1.jpg",
+        "joinDate": "2024-01-01T10:30:00",
+        "isCurrentUser": true
+      },
+      {
+        "id": 2,
+        "nickname": "小红",
+        "email": "xiaohong@example.com",
+        "gender": "FEMALE",
+        "birthDate": "1996-08-20",
+        "avatarUrl": "/images/user2.jpg",
+        "joinDate": "2024-01-01T10:35:00",
+        "isCurrentUser": false
+      }
+    ]
+  }
+}
+```
+
+### 14.8 获取当前用户的情侣成员信息
+**GET** `/api/couples/me/members`
+
+**认证**: 需要JWT Token
+
+**响应**: 同上格式
+
+### 14.9 获取情侣关系时长
+**GET** `/api/couples/{coupleId}/duration`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "coupleId": 1,
+    "loveStartDate": "2024-01-01",
+    "matchDate": "2024-01-01T10:30:00",
+    "totalDays": 365,
+    "totalMonths": 12,
+    "totalYears": 1,
+    "detailedDuration": {
+      "years": 1,
+      "months": 0,
+      "days": 0
+    },
+    "nextMilestone": {
+      "type": "DAYS_500",
+      "date": "2025-05-17",
+      "daysLeft": 135
+    }
+  }
+}
+```
+
+### 14.10 获取当前用户的情侣关系时长
+**GET** `/api/couples/me/duration`
+
+**认证**: 需要JWT Token
+
+**响应**: 同上格式
+
+### 14.11 获取情侣里程碑
+**GET** `/api/couples/{coupleId}/milestones`
+
+**认证**: 需要JWT Token
+
+**响应**:
+```json
+{
+  "success": true,
+  "data": {
+    "coupleId": 1,
+    "achieved": [
+      {
+        "type": "DAYS_100",
+        "title": "恋爱100天",
+        "date": "2024-04-10",
+        "description": "我们在一起已经100天了！"
+      },
+      {
+        "type": "DAYS_365",
+        "title": "恋爱1年",
+        "date": "2024-12-31",
+        "description": "第一个周年纪念日！"
+      }
+    ],
+    "upcoming": [
+      {
+        "type": "DAYS_500",
+        "title": "恋爱500天",
+        "targetDate": "2025-05-17",
+        "daysLeft": 135,
+        "description": "即将到来的500天里程碑"
+      }
+    ],
+    "total": 2,
+    "nextMilestone": {
+      "type": "DAYS_500",
+      "daysLeft": 135
+    }
+  }
+}
+```
+
+### 14.12 获取当前用户的情侣里程碑
+**GET** `/api/couples/me/milestones`
+
+**认证**: 需要JWT Token
+
+**响应**: 同上格式
+
 ## 更新日志
+
+### v1.3.0 (2024-01-04)
+- 新增动态管理功能，记录情侣间的各种活动
+- 增强情侣管理功能，提供详细的统计和分析
+- 支持动态时间线、分类查看、统计分析
+- 支持情侣里程碑计算和提醒
+- 增加动态类型管理和自定义创建功能
 
 ### v1.2.0 (2024-01-03)
 - 新增相册管理功能
