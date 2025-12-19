@@ -2026,3 +2026,1349 @@ body {
 .ios-card:hover {
     box-shadow: var(--shadow-md);
 }
+
+/* ===== 首页情绪卡片样式 ===== */
+.mood-card-section {
+    margin-bottom: 24px;
+}
+
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.view-more-btn {
+    background: none;
+    border: none;
+    color: var(--primary-pink);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mood-cards-row {
+    display: flex;
+    gap: 16px;
+}
+
+.mood-card {
+    flex: 1;
+    background: var(--card-gradient);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.mood-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.mood-card.my-mood {
+    border: 2px solid rgba(255, 107, 157, 0.2);
+}
+
+.mood-card.partner-mood {
+    border: 2px solid rgba(135, 206, 235, 0.2);
+}
+
+.mood-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.mood-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mood-emoji {
+    font-size: 48px;
+    margin: 12px 0;
+    text-align: center;
+}
+
+.mood-info {
+    text-align: center;
+}
+
+.mood-name {
+    display: block;
+    font-size: 13px;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+}
+
+.mood-text {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.mood-divider {
+    width: 2px;
+    background: var(--gray-200);
+    border-radius: 2px;
+}
+
+.comfort-btn {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: var(--primary-pink);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.comfort-btn:hover {
+    background: var(--primary-pink-dark);
+    transform: scale(1.05);
+}
+
+/* ===== 情绪记录页面样式 ===== */
+.mood-content {
+    padding: 20px;
+}
+
+.today-mood-summary {
+    margin-bottom: 24px;
+}
+
+.mood-summary-cards {
+    display: flex;
+    gap: 16px;
+}
+
+.mood-summary-card {
+    flex: 1;
+    background: var(--card-gradient);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.mood-summary-card.my-card {
+    border: 2px solid rgba(255, 107, 157, 0.3);
+}
+
+.mood-summary-card.partner-card {
+    border: 2px solid rgba(135, 206, 235, 0.3);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.mood-avatar-small {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.mood-user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.mood-display {
+    text-align: center;
+    margin: 16px 0;
+}
+
+.mood-emoji-large {
+    font-size: 64px;
+    margin-bottom: 8px;
+}
+
+.mood-type-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.mood-reason-text {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.5;
+    margin: 12px 0;
+}
+
+.mood-time {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.mood-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.comfort-btn-small {
+    background: var(--primary-pink);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mood-calendar-section {
+    margin-bottom: 24px;
+}
+
+.mood-calendar {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.mood-calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.mood-calendar-body {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.mood-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.mood-day:not(.empty):hover {
+    background: var(--gray-100);
+}
+
+.mood-day.today {
+    background: var(--primary-pink);
+    color: white;
+}
+
+.mood-day.empty {
+    cursor: default;
+}
+
+.day-number {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.day-moods {
+    display: flex;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.mini-emoji {
+    font-size: 14px;
+}
+
+.mini-emoji.my {
+    opacity: 1;
+}
+
+.mini-emoji.partner {
+    opacity: 0.7;
+}
+
+.mood-legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+.legend-emoji {
+    font-size: 18px;
+}
+
+.mood-stats-section {
+    margin-bottom: 24px;
+}
+
+.mood-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.mood-stat-card {
+    background: var(--card-gradient);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.mood-stat-card .stat-emoji {
+    font-size: 32px;
+}
+
+.mood-stat-card .stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.mood-stat-card .stat-label {
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+.mood-stat-card .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.recent-moods-section {
+    margin-bottom: 24px;
+}
+
+.mood-records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.mood-record-item {
+    background: var(--card-gradient);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.record-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.record-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+
+.record-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.record-date {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.record-mood-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.record-emoji {
+    font-size: 24px;
+}
+
+.record-mood-type {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.record-reason {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.5;
+}
+
+/* ===== 愿望清单页面样式 ===== */
+.todos-content {
+    padding: 20px;
+}
+
+.todos-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.todos-stats .stat-card {
+    background: var(--card-gradient);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.todos-stats .stat-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.todos-stats .stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.todos-stats .stat-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.todos-stats .stat-label {
+    font-size: 13px;
+    color: var(--gray-600);
+}
+
+.filter-section {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.filter-section .filter-tab {
+    flex: 1;
+    padding: 10px;
+    background: var(--gray-100);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.filter-section .filter-tab.active {
+    background: var(--primary-pink);
+    color: white;
+}
+
+.filter-section .filter-tab:hover:not(.active) {
+    background: var(--gray-200);
+}
+
+.todos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.todo-card {
+    background: var(--card-gradient);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
+}
+
+.todo-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.todo-card.completed {
+    opacity: 0.7;
+}
+
+.todo-card.completed .todo-title {
+    text-decoration: line-through;
+    color: var(--gray-500);
+}
+
+.todo-checkbox {
+    flex-shrink: 0;
+}
+
+.todo-checkbox input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.todo-content {
+    flex: 1;
+}
+
+.todo-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 6px;
+}
+
+.todo-description {
+    font-size: 14px;
+    color: var(--gray-600);
+    line-height: 1.4;
+    margin-bottom: 8px;
+}
+
+.todo-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.todo-date {
+    font-size: 12px;
+    color: var(--gray-500);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.todo-date.completed-date {
+    color: var(--primary-pink);
+}
+
+.todo-priority {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.todo-priority.high {
+    background: rgba(255, 107, 157, 0.1);
+    color: var(--primary-pink);
+}
+
+.todo-priority.medium {
+    background: rgba(255, 193, 7, 0.1);
+    color: #FFA000;
+}
+
+.todo-priority.low {
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+}
+
+.todo-actions {
+    flex-shrink: 0;
+}
+
+.todo-actions .action-btn {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px;
+    transition: all 0.2s ease;
+}
+
+.todo-actions .action-btn:hover {
+    color: var(--primary-pink);
+}
+
+.todo-completion-note {
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-top: 12px;
+}
+
+.note-photos {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.note-photos img {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+}
+
+.note-text {
+    font-size: 14px;
+    color: var(--gray-700);
+    line-height: 1.4;
+}
+
+/* ===== 庆祝动画 ===== */
+.celebration-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease;
+}
+
+.celebration-content {
+    text-align: center;
+    animation: scaleUp 0.5s ease;
+}
+
+.celebration-emoji {
+    font-size: 100px;
+    animation: bounce 0.6s ease infinite;
+}
+
+.celebration-text {
+    font-size: 32px;
+    font-weight: 700;
+    color: white;
+    margin-top: 16px;
+}
+
+@keyframes scaleUp {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+/* ===== 模态框通用样式 ===== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-close-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-close-btn:hover {
+    background: var(--border-color);
+    transform: scale(1.1);
+}
+
+.modal-close-btn i {
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+
+.modal-body {
+    padding: 24px;
+    max-height: calc(80vh - 180px);
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ===== 情绪记录模态框 ===== */
+.mood-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.mood-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 8px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.mood-option:hover {
+    border-color: var(--primary-pink);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.mood-option.selected {
+    border-color: var(--primary-pink);
+    background: rgba(255, 107, 157, 0.1);
+}
+
+.mood-emoji {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.mood-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.mood-option.selected .mood-label {
+    color: var(--primary-pink);
+}
+
+.mood-level-section {
+    margin-top: 24px;
+}
+
+.mood-level-slider {
+    margin-top: 12px;
+}
+
+.mood-level-slider input[type="range"] {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #ff4757 0%, #ffa502 25%, #ffd32a 50%, #95e1d3 75%, #26de81 100%);
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.mood-level-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--primary-pink);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.mood-level-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.mood-level-labels span {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.mood-reason-section {
+    margin-top: 24px;
+}
+
+.mood-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    margin-top: 8px;
+    transition: border-color 0.2s;
+}
+
+.mood-textarea:focus {
+    outline: none;
+    border-color: var(--primary-pink);
+}
+
+.char-counter {
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* ===== 表单通用样式 ===== */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.form-label.required::after {
+    content: ' *';
+    color: #ff4757;
+}
+
+.form-input, .form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-pink);
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
+}
+
+.form-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.form-error {
+    font-size: 12px;
+    color: #ff4757;
+    margin-top: 4px;
+    min-height: 18px;
+}
+
+/* ===== 优先级选择器 ===== */
+.priority-selector {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.priority-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.priority-option:hover {
+    border-color: var(--primary-pink);
+    transform: translateY(-2px);
+}
+
+.priority-option.active {
+    border-color: var(--primary-pink);
+    background: rgba(255, 107, 157, 0.1);
+}
+
+.priority-option i {
+    font-size: 20px;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+}
+
+.priority-option.active i {
+    color: var(--primary-pink);
+}
+
+.priority-option[data-priority="low"] i {
+    color: #95e1d3;
+}
+
+.priority-option[data-priority="medium"] i {
+    color: #ffa502;
+}
+
+.priority-option[data-priority="high"] i {
+    color: #ff4757;
+}
+
+.priority-option span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.priority-option.active span {
+    color: var(--primary-pink);
+    font-weight: 600;
+}
+
+/* ===== 按钮样式 ===== */
+.btn-primary, .btn-secondary, .btn-danger {
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary-pink);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-pink-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
+}
+
+.btn-primary:disabled {
+    background: var(--border-color);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--border-color);
+}
+
+.btn-danger {
+    background: #ff4757;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #ee5a6f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+/* ===== 照片查看模态框 ===== */
+.photo-modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    background: black;
+    position: relative;
+}
+
+.photo-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+}
+
+.photo-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.photo-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+}
+
+.photo-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.photo-nav-btn.prev {
+    left: 20px;
+}
+
+.photo-nav-btn.next {
+    right: 20px;
+}
+
+.photo-view-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 80px;
+}
+
+.photo-view-container img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.photo-info {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.photo-description {
+    color: white;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.photo-date {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+}
+
+/* ===== 确认对话框 ===== */
+.confirm-modal-content {
+    max-width: 400px;
+}
+
+.confirm-message {
+    font-size: 14px;
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* ===== 加载状态 ===== */
+.loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 9998;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-overlay.show {
+    display: flex;
+}
+
+.loading-spinner {
+    text-align: center;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-pink);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* ===== 空状态组件 ===== */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+}
+
+.empty-state-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.empty-state-description {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* ===== 响应式适配 ===== */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+
+    .mood-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+    }
+
+    .mood-option {
+        padding: 12px 4px;
+    }
+
+    .mood-emoji {
+        font-size: 28px;
+    }
+
+    .photo-view-container {
+        padding: 40px 20px;
+    }
+
+    .photo-nav-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+}
+
+/* ===== 纪念日视图切换 ===== */
+.header-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.view-toggle {
+    display: flex;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.toggle-btn {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.toggle-btn.active {
+    background: white;
+    color: var(--primary-pink);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn:hover:not(.active) {
+    color: var(--primary-pink);
+}
+
+.calendar-view-container,
+.list-view-container {
+    animation: fadeIn 0.3s ease;
+}
+
+/* 纪念日日历样式增强 */
+.calendar-body .day {
+    position: relative;
+    cursor: pointer;
+}
+
+.calendar-body .day.has-anniversary::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--primary-pink);
+    border-radius: 50%;
+}
+
+.calendar-body .day.has-anniversary:hover {
+    background: rgba(255, 107, 157, 0.1);
+}
+
+/* 纪念日筛选标签 */
+.filter-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.filter-tabs .filter-tab {
+    padding: 6px 16px;
+    border: 1px solid var(--border-color);
+    background: white;
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-tabs .filter-tab:hover {
+    border-color: var(--primary-pink);
+    color: var(--primary-pink);
+}
+
+.filter-tabs .filter-tab.active {
+    background: var(--primary-pink);
+    border-color: var(--primary-pink);
+    color: white;
+}

@@ -70,6 +70,45 @@
                         </div>
                     </div>
 
+                    <!-- 今日情绪卡片 -->
+                    <div class="mood-card-section">
+                        <div class="section-header-row">
+                            <h3 class="section-title">
+                                <i class="fas fa-face-smile"></i>
+                                今日心情
+                            </h3>
+                            <button class="view-more-btn" onclick="navigateToTab('mood')">
+                                查看更多 <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="mood-cards-row">
+                            <div class="mood-card my-mood" onclick="recordMyMood()">
+                                <div class="mood-avatar">
+                                    <img src="https://via.placeholder.com/50x50/FF6B9D/FFFFFF?text=👸" alt="我">
+                                </div>
+                                <div class="mood-emoji">😊</div>
+                                <div class="mood-info">
+                                    <span class="mood-name">我</span>
+                                    <span class="mood-text">开心</span>
+                                </div>
+                            </div>
+                            <div class="mood-divider"></div>
+                            <div class="mood-card partner-mood" onclick="viewPartnerMood()">
+                                <div class="mood-avatar">
+                                    <img src="https://via.placeholder.com/50x50/87CEEB/FFFFFF?text=🤴" alt="Ta">
+                                </div>
+                                <div class="mood-emoji">😢</div>
+                                <div class="mood-info">
+                                    <span class="mood-name">Ta</span>
+                                    <span class="mood-text">难过</span>
+                                </div>
+                                <button class="comfort-btn" onclick="comfortPartner(event)">
+                                    <i class="fas fa-comment-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 快捷功能 -->
                     <div class="quick-actions">
                         <div class="action-item" onclick="navigateToTab('anniversary')">
@@ -90,11 +129,11 @@
                             </div>
                             <span>愿望清单</span>
                         </div>
-                        <div class="action-item" onclick="navigateToTab('period')">
-                            <div class="action-icon period">
-                                <i class="fas fa-moon"></i>
+                        <div class="action-item" onclick="navigateToTab('mood')">
+                            <div class="action-icon mood">
+                                <i class="fas fa-face-smile"></i>
                             </div>
-                            <span>生理期</span>
+                            <span>情绪记录</span>
                         </div>
                     </div>
 
@@ -132,9 +171,19 @@
             <div class="page" id="anniversaryPage">
                 <div class="page-header">
                     <h1 class="page-title">纪念日</h1>
-                    <button class="add-btn" onclick="showAddAnniversary()">
-                        <i class="fas fa-plus"></i>
-                    </button>
+                    <div class="header-actions">
+                        <div class="view-toggle">
+                            <button class="toggle-btn active" data-view="list" onclick="switchAnniversaryView('list')">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="toggle-btn" data-view="calendar" onclick="switchAnniversaryView('calendar')">
+                                <i class="fas fa-calendar"></i>
+                            </button>
+                        </div>
+                        <button class="add-btn" onclick="showAddAnniversary()">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="anniversary-content">
                     <!-- 即将到来的纪念日提醒 -->
@@ -156,35 +205,40 @@
                         </div>
                     </div>
 
-                    <!-- 月历视图切换 -->
-                    <div class="calendar-controls">
-                        <button class="calendar-nav-btn" onclick="prevMonth()">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <h3 class="calendar-title" id="calendarTitle">2025年7月</h3>
-                        <button class="calendar-nav-btn" onclick="nextMonth()">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
+                    <!-- 日历视图容器 -->
+                    <div class="calendar-view-container" style="display: none;">
+                        <!-- 月历视图切换 -->
+                        <div class="calendar-controls">
+                            <button class="calendar-nav-btn" onclick="prevMonth()">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 class="calendar-title" id="calendarTitle">2025年7月</h3>
+                            <button class="calendar-nav-btn" onclick="nextMonth()">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- 小型日历 -->
+                        <div class="mini-calendar">
+                            <div class="calendar-header">
+                                <div class="weekday">日</div>
+                                <div class="weekday">一</div>
+                                <div class="weekday">二</div>
+                                <div class="weekday">三</div>
+                                <div class="weekday">四</div>
+                                <div class="weekday">五</div>
+                                <div class="weekday">六</div>
+                            </div>
+                            <div class="calendar-body" id="calendarBody">
+                                <!-- 日历内容将通过JavaScript生成 -->
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- 小型日历 -->
-                    <div class="mini-calendar">
-                        <div class="calendar-header">
-                            <div class="weekday">日</div>
-                            <div class="weekday">一</div>
-                            <div class="weekday">二</div>
-                            <div class="weekday">三</div>
-                            <div class="weekday">四</div>
-                            <div class="weekday">五</div>
-                            <div class="weekday">六</div>
-                        </div>
-                        <div class="calendar-body" id="calendarBody">
-                            <!-- 日历内容将通过JavaScript生成 -->
-                        </div>
-                    </div>
-
-                    <!-- 纪念日列表 -->
-                    <div class="anniversary-list-section">
+                    <!-- 列表视图容器 -->
+                    <div class="list-view-container">
+                        <!-- 纪念日列表 -->
+                        <div class="anniversary-list-section">
                         <div class="list-header">
                             <h3 class="section-title">
                                 <i class="fas fa-heart"></i>
@@ -315,6 +369,9 @@
                             </div>
                         </div>
                     </div>
+                    </div>
+                    <!-- 列表视图容器结束 -->
+
                 </div>
             </div>
 
@@ -578,7 +635,139 @@
                     </button>
                 </div>
                 <div class="todos-content">
-                    <p class="placeholder-text">愿望清单功能开发中...</p>
+                    <!-- 统计卡片 -->
+                    <div class="todos-stats">
+                        <div class="stat-card">
+                            <div class="stat-icon">✨</div>
+                            <div class="stat-info">
+                                <span class="stat-number">12</span>
+                                <span class="stat-label">总愿望</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💫</div>
+                            <div class="stat-info">
+                                <span class="stat-number">5</span>
+                                <span class="stat-label">已完成</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-info">
+                                <span class="stat-number">42%</span>
+                                <span class="stat-label">完成率</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 筛选标签 -->
+                    <div class="filter-section">
+                        <button class="filter-tab active" data-filter="all" onclick="filterTodos('all')">
+                            <i class="fas fa-list"></i> 全部
+                        </button>
+                        <button class="filter-tab" data-filter="pending" onclick="filterTodos('pending')">
+                            <i class="fas fa-clock"></i> 进行中
+                        </button>
+                        <button class="filter-tab" data-filter="completed" onclick="filterTodos('completed')">
+                            <i class="fas fa-check-circle"></i> 已完成
+                        </button>
+                    </div>
+
+                    <!-- 愿望列表 -->
+                    <div class="todos-list">
+                        <!-- 愿望卡片 1 -->
+                        <div class="todo-card" data-status="pending">
+                            <div class="todo-checkbox">
+                                <input type="checkbox" id="todo-1" onclick="toggleTodoStatus(1)">
+                                <label for="todo-1"></label>
+                            </div>
+                            <div class="todo-content">
+                                <h4 class="todo-title">一起去看极光</h4>
+                                <p class="todo-description">去冰岛或者芬兰看北极光</p>
+                                <div class="todo-meta">
+                                    <span class="todo-date">
+                                        <i class="fas fa-calendar"></i> 添加于 7月15日
+                                    </span>
+                                    <span class="todo-priority high">高优先级</span>
+                                </div>
+                            </div>
+                            <div class="todo-actions">
+                                <button class="action-btn" onclick="editTodo(1)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 愿望卡片 2 (已完成) -->
+                        <div class="todo-card completed" data-status="completed">
+                            <div class="todo-checkbox">
+                                <input type="checkbox" id="todo-2" checked onclick="toggleTodoStatus(2)">
+                                <label for="todo-2"></label>
+                            </div>
+                            <div class="todo-content">
+                                <h4 class="todo-title">一起做一顿大餐</h4>
+                                <p class="todo-description">尝试做意大利面和提拉米苏</p>
+                                <div class="todo-meta">
+                                    <span class="todo-date completed-date">
+                                        <i class="fas fa-check-circle"></i> 完成于 6月20日
+                                    </span>
+                                </div>
+                                <div class="todo-completion-note">
+                                    <div class="note-photos">
+                                        <img src="https://via.placeholder.com/60x60/FF6B9D/FFFFFF?text=📷" alt="照片1">
+                                        <img src="https://via.placeholder.com/60x60/87CEEB/FFFFFF?text=📷" alt="照片2">
+                                    </div>
+                                    <p class="note-text">😋 做得很成功，超级好吃！</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 愿望卡片 3 -->
+                        <div class="todo-card" data-status="pending">
+                            <div class="todo-checkbox">
+                                <input type="checkbox" id="todo-3" onclick="toggleTodoStatus(3)">
+                                <label for="todo-3"></label>
+                            </div>
+                            <div class="todo-content">
+                                <h4 class="todo-title">去迪士尼乐园</h4>
+                                <p class="todo-description">东京迪士尼或者上海迪士尼</p>
+                                <div class="todo-meta">
+                                    <span class="todo-date">
+                                        <i class="fas fa-calendar"></i> 添加于 5月10日
+                                    </span>
+                                    <span class="todo-priority medium">中优先级</span>
+                                </div>
+                            </div>
+                            <div class="todo-actions">
+                                <button class="action-btn" onclick="editTodo(3)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 愿望卡片 4 -->
+                        <div class="todo-card" data-status="pending">
+                            <div class="todo-checkbox">
+                                <input type="checkbox" id="todo-4" onclick="toggleTodoStatus(4)">
+                                <label for="todo-4"></label>
+                            </div>
+                            <div class="todo-content">
+                                <h4 class="todo-title">学会一首双人舞</h4>
+                                <p class="todo-description">探戈或者华尔兹</p>
+                                <div class="todo-meta">
+                                    <span class="todo-date">
+                                        <i class="fas fa-calendar"></i> 添加于 4月28日
+                                    </span>
+                                    <span class="todo-priority low">低优先级</span>
+                                </div>
+                            </div>
+                            <div class="todo-actions">
+                                <button class="action-btn" onclick="editTodo(4)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -592,6 +781,264 @@
                 </div>
                 <div class="period-content">
                     <p class="placeholder-text">生理期功能开发中...</p>
+                </div>
+            </div>
+
+            <!-- 情绪记录页面 -->
+            <div class="page" id="moodPage">
+                <div class="page-header">
+                    <h1 class="page-title">情绪记录</h1>
+                    <button class="add-btn" onclick="showRecordMood()">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="mood-content">
+                    <!-- 今日情绪摘要 -->
+                    <div class="today-mood-summary">
+                        <h3 class="section-title">
+                            <i class="fas fa-calendar-day"></i>
+                            今日情绪
+                        </h3>
+                        <div class="mood-summary-cards">
+                            <div class="mood-summary-card my-card" onclick="recordMyMood()">
+                                <div class="card-header">
+                                    <img src="https://via.placeholder.com/40x40/FF6B9D/FFFFFF?text=👸" alt="我" class="mood-avatar-small">
+                                    <span class="mood-user-name">我</span>
+                                </div>
+                                <div class="mood-display">
+                                    <div class="mood-emoji-large">😊</div>
+                                    <span class="mood-type-text">开心</span>
+                                </div>
+                                <p class="mood-reason-text">今天工作顺利，心情很好</p>
+                                <span class="mood-time">2小时前记录</span>
+                            </div>
+
+                            <div class="mood-summary-card partner-card">
+                                <div class="card-header">
+                                    <img src="https://via.placeholder.com/40x40/87CEEB/FFFFFF?text=🤴" alt="Ta" class="mood-avatar-small">
+                                    <span class="mood-user-name">Ta</span>
+                                </div>
+                                <div class="mood-display">
+                                    <div class="mood-emoji-large">😢</div>
+                                    <span class="mood-type-text">难过</span>
+                                </div>
+                                <p class="mood-reason-text">工作被批评了，有点难受</p>
+                                <div class="mood-actions-row">
+                                    <span class="mood-time">5小时前记录</span>
+                                    <button class="comfort-btn-small" onclick="comfortPartner(event)">
+                                        <i class="fas fa-comment-heart"></i> 安慰Ta
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 日历视图 -->
+                    <div class="mood-calendar-section">
+                        <div class="calendar-controls">
+                            <button class="calendar-nav-btn" onclick="prevMoodMonth()">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 class="calendar-title" id="moodCalendarTitle">2025年7月</h3>
+                            <button class="calendar-nav-btn" onclick="nextMoodMonth()">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- 情绪日历 -->
+                        <div class="mood-calendar">
+                            <div class="mood-calendar-header">
+                                <div class="weekday">日</div>
+                                <div class="weekday">一</div>
+                                <div class="weekday">二</div>
+                                <div class="weekday">三</div>
+                                <div class="weekday">四</div>
+                                <div class="weekday">五</div>
+                                <div class="weekday">六</div>
+                            </div>
+                            <div class="mood-calendar-body" id="moodCalendarBody">
+                                <!-- 日历网格 -->
+                                <div class="mood-day empty"></div>
+                                <div class="mood-day empty"></div>
+                                <div class="mood-day empty"></div>
+
+                                <!-- 7月1日 -->
+                                <div class="mood-day" data-date="2025-07-01" onclick="viewDayMood('2025-07-01')">
+                                    <span class="day-number">1</span>
+                                    <div class="day-moods">
+                                        <span class="mini-emoji my">😊</span>
+                                        <span class="mini-emoji partner">😊</span>
+                                    </div>
+                                </div>
+
+                                <!-- 7月2日 -->
+                                <div class="mood-day" data-date="2025-07-02" onclick="viewDayMood('2025-07-02')">
+                                    <span class="day-number">2</span>
+                                    <div class="day-moods">
+                                        <span class="mini-emoji my">😐</span>
+                                        <span class="mini-emoji partner">😊</span>
+                                    </div>
+                                </div>
+
+                                <!-- 更多日期... -->
+                                <div class="mood-day" data-date="2025-07-03" onclick="viewDayMood('2025-07-03')">
+                                    <span class="day-number">3</span>
+                                    <div class="day-moods">
+                                        <span class="mini-emoji my">😍</span>
+                                        <span class="mini-emoji partner">😍</span>
+                                    </div>
+                                </div>
+
+                                <div class="mood-day" data-date="2025-07-04" onclick="viewDayMood('2025-07-04')">
+                                    <span class="day-number">4</span>
+                                    <div class="day-moods">
+                                        <span class="mini-emoji partner">🥺</span>
+                                    </div>
+                                </div>
+
+                                <!-- 继续填充其他日期 -->
+                                <div class="mood-day" data-date="2025-07-05">
+                                    <span class="day-number">5</span>
+                                </div>
+
+                                <div class="mood-day" data-date="2025-07-06">
+                                    <span class="day-number">6</span>
+                                </div>
+
+                                <!-- 当前日期 -->
+                                <div class="mood-day today" data-date="2025-07-22">
+                                    <span class="day-number">22</span>
+                                    <div class="day-moods">
+                                        <span class="mini-emoji my">😊</span>
+                                        <span class="mini-emoji partner">😢</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 日历图例 -->
+                        <div class="mood-legend">
+                            <div class="legend-item">
+                                <span class="legend-emoji my">😊</span>
+                                <span class="legend-text">我的心情</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-emoji partner">😊</span>
+                                <span class="legend-text">Ta的心情</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 情绪统计 -->
+                    <div class="mood-stats-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-simple"></i>
+                            本月统计
+                        </h3>
+                        <div class="mood-stats-grid">
+                            <div class="mood-stat-card">
+                                <div class="stat-emoji">😊</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">开心</span>
+                                    <span class="stat-value">12天</span>
+                                </div>
+                            </div>
+                            <div class="mood-stat-card">
+                                <div class="stat-emoji">😐</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">平淡</span>
+                                    <span class="stat-value">8天</span>
+                                </div>
+                            </div>
+                            <div class="mood-stat-card">
+                                <div class="stat-emoji">😢</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">难过</span>
+                                    <span class="stat-value">2天</span>
+                                </div>
+                            </div>
+                            <div class="mood-stat-card">
+                                <div class="stat-emoji">😍</div>
+                                <div class="stat-info">
+                                    <span class="stat-label">甜蜜</span>
+                                    <span class="stat-value">5天</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 最近记录列表 -->
+                    <div class="recent-moods-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-clock-rotate-left"></i>
+                            最近记录
+                        </h3>
+                        <div class="mood-records-list">
+                            <!-- 情绪记录项 1 -->
+                            <div class="mood-record-item">
+                                <div class="record-header">
+                                    <div class="record-user">
+                                        <img src="https://via.placeholder.com/36x36/FF6B9D/FFFFFF?text=👸" alt="我" class="record-avatar">
+                                        <span class="record-name">我</span>
+                                    </div>
+                                    <span class="record-date">今天 14:30</span>
+                                </div>
+                                <div class="record-mood-display">
+                                    <span class="record-emoji">😊</span>
+                                    <span class="record-mood-type">开心</span>
+                                </div>
+                                <p class="record-reason">今天工作顺利，下午还收到了小礼物</p>
+                            </div>
+
+                            <!-- 情绪记录项 2 -->
+                            <div class="mood-record-item">
+                                <div class="record-header">
+                                    <div class="record-user">
+                                        <img src="https://via.placeholder.com/36x36/87CEEB/FFFFFF?text=🤴" alt="Ta" class="record-avatar">
+                                        <span class="record-name">Ta</span>
+                                    </div>
+                                    <span class="record-date">今天 09:15</span>
+                                </div>
+                                <div class="record-mood-display">
+                                    <span class="record-emoji">😢</span>
+                                    <span class="record-mood-type">难过</span>
+                                </div>
+                                <p class="record-reason">工作被批评了，有点难受</p>
+                            </div>
+
+                            <!-- 情绪记录项 3 -->
+                            <div class="mood-record-item">
+                                <div class="record-header">
+                                    <div class="record-user">
+                                        <img src="https://via.placeholder.com/36x36/FF6B9D/FFFFFF?text=👸" alt="我" class="record-avatar">
+                                        <span class="record-name">我</span>
+                                    </div>
+                                    <span class="record-date">昨天 20:45</span>
+                                </div>
+                                <div class="record-mood-display">
+                                    <span class="record-emoji">😍</span>
+                                    <span class="record-mood-type">甜蜜</span>
+                                </div>
+                                <p class="record-reason">和Ta视频聊天，一起看了电影</p>
+                            </div>
+
+                            <!-- 情绪记录项 4 -->
+                            <div class="mood-record-item">
+                                <div class="record-header">
+                                    <div class="record-user">
+                                        <img src="https://via.placeholder.com/36x36/87CEEB/FFFFFF?text=🤴" alt="Ta" class="record-avatar">
+                                        <span class="record-name">Ta</span>
+                                    </div>
+                                    <span class="record-date">昨天 18:20</span>
+                                </div>
+                                <div class="record-mood-display">
+                                    <span class="record-emoji">😊</span>
+                                    <span class="record-mood-type">开心</span>
+                                </div>
+                                <p class="record-reason">项目通过了，可以早点下班</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -803,6 +1250,182 @@
                 <i class="fas fa-user-circle"></i>
                 <span>我的</span>
             </div>
+        </div>
+    </div>
+
+    <!-- 模态框组件 -->
+
+    <!-- 情绪记录模态框 -->
+    <div class="modal" id="moodModal">
+        <div class="modal-content mood-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">记录今日心情</h2>
+                <button class="modal-close-btn" onclick="closeMoodModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="mood-select-section">
+                    <label class="form-label">选择心情</label>
+                    <div class="mood-grid">
+                        <div class="mood-option" data-mood="HAPPY" onclick="selectMood('HAPPY')">
+                            <span class="mood-emoji">😊</span>
+                            <span class="mood-label">开心</span>
+                        </div>
+                        <div class="mood-option" data-mood="LOVE" onclick="selectMood('LOVE')">
+                            <span class="mood-emoji">🥰</span>
+                            <span class="mood-label">甜蜜</span>
+                        </div>
+                        <div class="mood-option" data-mood="EXCITED" onclick="selectMood('EXCITED')">
+                            <span class="mood-emoji">🤩</span>
+                            <span class="mood-label">兴奋</span>
+                        </div>
+                        <div class="mood-option" data-mood="NEUTRAL" onclick="selectMood('NEUTRAL')">
+                            <span class="mood-emoji">😐</span>
+                            <span class="mood-label">平静</span>
+                        </div>
+                        <div class="mood-option" data-mood="MISS" onclick="selectMood('MISS')">
+                            <span class="mood-emoji">🥺</span>
+                            <span class="mood-label">想念</span>
+                        </div>
+                        <div class="mood-option" data-mood="SAD" onclick="selectMood('SAD')">
+                            <span class="mood-emoji">😢</span>
+                            <span class="mood-label">难过</span>
+                        </div>
+                        <div class="mood-option" data-mood="ANXIOUS" onclick="selectMood('ANXIOUS')">
+                            <span class="mood-emoji">😰</span>
+                            <span class="mood-label">焦虑</span>
+                        </div>
+                        <div class="mood-option" data-mood="ANGRY" onclick="selectMood('ANGRY')">
+                            <span class="mood-emoji">😠</span>
+                            <span class="mood-label">生气</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mood-level-section">
+                    <label class="form-label">心情程度</label>
+                    <div class="mood-level-slider">
+                        <input type="range" id="moodLevel" min="1" max="5" value="3" oninput="updateMoodLevel(this.value)">
+                        <div class="mood-level-labels">
+                            <span>很差</span>
+                            <span>较差</span>
+                            <span>一般</span>
+                            <span>较好</span>
+                            <span>很好</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mood-reason-section">
+                    <label class="form-label">原因/备注（可选）</label>
+                    <textarea id="moodReason" class="mood-textarea" placeholder="今天发生了什么让你有这样的心情呢？" maxlength="200"></textarea>
+                    <div class="char-counter">
+                        <span id="reasonCharCount">0</span>/200
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeMoodModal()">取消</button>
+                <button class="btn-primary" onclick="submitMoodRecord()" id="submitMoodBtn" disabled>保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 愿望清单添加/编辑模态框 -->
+    <div class="modal" id="todoModal">
+        <div class="modal-content todo-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="todoModalTitle">添加新愿望</h2>
+                <button class="modal-close-btn" onclick="closeTodoModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label required">愿望标题</label>
+                    <input type="text" id="todoTitle" class="form-input" placeholder="例如：一起去看极光" maxlength="50">
+                    <div class="form-error" id="todoTitleError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">详细描述（可选）</label>
+                    <textarea id="todoDescription" class="form-textarea" placeholder="描述一下这个愿望..." maxlength="200"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">期望完成日期（可选）</label>
+                    <input type="date" id="todoDate" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">优先级</label>
+                    <div class="priority-selector">
+                        <div class="priority-option" data-priority="low" onclick="selectPriority('low')">
+                            <i class="fas fa-flag"></i>
+                            <span>低</span>
+                        </div>
+                        <div class="priority-option active" data-priority="medium" onclick="selectPriority('medium')">
+                            <i class="fas fa-flag"></i>
+                            <span>中</span>
+                        </div>
+                        <div class="priority-option" data-priority="high" onclick="selectPriority('high')">
+                            <i class="fas fa-flag"></i>
+                            <span>高</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeTodoModal()">取消</button>
+                <button class="btn-primary" onclick="submitTodoForm()" id="submitTodoBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 照片大图查看模态框 -->
+    <div class="modal" id="photoViewModal">
+        <div class="modal-content photo-modal-content">
+            <button class="photo-close-btn" onclick="closePhotoModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <button class="photo-nav-btn prev" onclick="prevPhoto()">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="photo-nav-btn next" onclick="nextPhoto()">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            <div class="photo-view-container">
+                <img id="photoViewImage" src="" alt="照片">
+                <div class="photo-info">
+                    <p class="photo-description" id="photoDescription"></p>
+                    <p class="photo-date" id="photoDate"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 删除确认对话框 -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content confirm-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="confirmTitle">确认删除</h2>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-message" id="confirmMessage">确定要删除这项内容吗？此操作无法撤销。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeConfirmModal()">取消</button>
+                <button class="btn-danger" onclick="confirmDelete()" id="confirmDeleteBtn">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载状态组件 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p class="loading-text">加载中...</p>
         </div>
     </div>
 
