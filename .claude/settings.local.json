@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(chmod:*)",
+      "Bash(mvn clean:*)",
+      "Bash(java:*)",
+      "Bash(apt list:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(mvn:*)",
+      "Bash(grep -n \"^##\" \"/mnt/d/Projects/LoveDiary/API接口文档.md\")",
+      "mcp__zen__analyze",
+      "Bash(grep:*)",
+      "mcp__zen__chat",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}
