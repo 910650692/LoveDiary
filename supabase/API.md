@@ -105,8 +105,24 @@ SUPABASE_URL=https://prkijbbjrjfmkolkjxsk.supabase.co
 SUPABASE_ANON_KEY=<anon key>   # supabase projects api-keys 可查
 ```
 
+## 推送（阶段 3，服务端已就绪）
+
+- **服务商**：OneSignal（免费档）。密钥存于 Supabase secrets：`ONESIGNAL_APP_ID` / `ONESIGNAL_API_KEY` / `OUR_INTERNAL_SECRET`（内部函数鉴权，与迁移文件保持一致）
+- **Edge Function**（`supabase/functions/`，已部署，verify_jwt=false，靠 `OUR_INTERNAL_SECRET` 鉴权）：
+  - `send-push` — 通用推送入口：`POST /functions/v1/send-push` `{userIds:[uuid], title, body, data?}`，内部/触发器调用
+  - `anniversary-reminder` — 纪念日提醒：pg_cron 每天 23:00 UTC（北京时间 07:00）触发，查今天/明天的 anniversaries（enable_notification=true）+ 恋爱周年，给双方发推送
+- **数据库侧**（迁移 `20260809223000_stage3_push.sql`）：pg_cron 定时任务 + `wishlist_items` 新增时触发器调 send-push 通知另一半
+- **iOS 端待做**：OneSignal SDK 集成，注册时 `external_user_id = Supabase 用户 UUID`（服务端据此寻址）；APNs 证书需 Apple 开发者账号（$99）后配置
+
+### 客户端接收约定
+推送 `data` 字段携带跳转信息，app 收到后按 `type` 导航：
+| type | data | 跳转 |
+|---|---|---|
+| `anniversary` | `anniversary_id` | 重要日期详情 |
+| `couple_anniversary` | `couple_id` | 主页 |
+| `wishlist` | `wishlist_id` | 心愿单 |
+
 ## 尚未实现（后续阶段）
 
-- **阶段 3 推送**：OneSignal + APNs；Edge Function 定时触发（纪念日提醒/心愿新增/随机回忆），数据库变更订阅或 pg_cron
 - **阶段 4 照片**：阿里云 OSS，Edge Function 签发 STS 临时凭证，`avatar_url`/相册存 OSS key
 - 对应表（albums/photos/tags/photo_tag）旧 Java 后端 `backend/database_setup.sql` 有设计，届时参考改编
