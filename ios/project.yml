@@ -1,0 +1,52 @@
+name: Ours
+options:
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+packages:
+  supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: 2.0.0
+  onesignal:
+    url: https://github.com/OneSignal/OneSignal-iOS-SDK
+    from: 5.0.0
+
+targets:
+  Ours:
+    type: application
+    platform: iOS
+    sources:
+      - path: Ours
+    info:
+      path: Ours/Info.plist
+      properties:
+        CFBundleDisplayName: Ours
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        # 占位 Bundle ID：PRD 待定项，上架前定
+        PRODUCT_BUNDLE_IDENTIFIER: com.ours.app
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"   # iPhone only
+        CODE_SIGN_STYLE: Automatic
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 0.1.0
+    dependencies:
+      - package: supabase
+        product: Supabase
+      - package: onesignal
+        product: OneSignal
+
+schemes:
+  Ours:
+    build:
+      targets:
+        Ours: all
+    run:
+      config: Debug

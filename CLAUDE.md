@@ -18,15 +18,16 @@
 - `CLAUDE.md` — 本文件：当前项目说明（前端/Supabase 方向）
 - `backend/` — 旧 Java 后端（退役留档，含 README、CLAUDE.md、API接口文档.md、uploads）
 - `ios_todolist_prototype/` — iOS TodoList 原型（HTML，设计参考）
-- `ios/` — SwiftUI app 工程（规划中，尚未创建）
+- `ios/` — SwiftUI app 工程（XcodeGen，阶段 1 骨架已完成，含 README）
 - `supabase/` — Supabase 后端（migrations/ 建表迁移、scripts/e2e.mjs 端到端测试、API.md iOS 端接口约定）
 - `.claude/settings.local.json` — 旧 WSL 开发遗留权限，已过时可忽略
 
-## 开发进度（2026-08-09）
+## 开发进度（2026-08-10）
 - Supabase 云端项目已建并连接（ref `prkijbbjrjfmkolkjxsk`），阶段 1/2 建表迁移已推送验证
 - 阶段 1 绑定流程端到端验证通过：`supabase/scripts/e2e.mjs`（9 项全绿，可重复跑）
-- 阶段 2 表（anniversaries / wishlist_items）已上线
-- 剩余：iOS 工程（阶段 1 验收「Mac 上跑通」）、推送（阶段 3，需 OneSignal 账号）、照片（阶段 4，需阿里云 OSS）
+- 阶段 3 推送服务端就绪：OneSignal 密钥已配，send-push / anniversary-reminder 已部署验证，pg_cron 每天 07:00（北京时间）跑纪念日提醒，心愿新增自动通知另一半
+- iOS 阶段 1 骨架已完成（`ios/`，XcodeGen + SwiftUI）：登录注册/绑定/主页，待 Mac 上 `xcodegen generate` 跑通验收
+- 剩余：iOS 跑通（阶段 1 验收「Mac 上跑通」）、推送真机验证（需 Apple 开发者账号 $99 配 APNs）、照片（阶段 4，需阿里云 OSS）
 
 ## 待定事项（未拍板前不要擅自决定）
 - 留言板/悄悄话做不做（倾向做）
