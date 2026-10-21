@@ -8,9 +8,6 @@ packages:
   supabase:
     url: https://github.com/supabase/supabase-swift
     from: 2.0.0
-  onesignal:
-    url: https://github.com/OneSignal/OneSignal-iOS-SDK
-    from: 5.0.0
 
 targets:
   Ours:
@@ -35,13 +32,31 @@ targets:
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"   # iPhone only
         CODE_SIGN_STYLE: Automatic
+        # 动态框架运行时搜索路径（OneSignal 是动态库）
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 0.1.0
     dependencies:
       - package: supabase
         product: Supabase
-      - package: onesignal
-        product: OneSignalFramework
+      # OneSignal 5.8.0 预编译 XCFramework（Vendor/OneSignal，由 scripts/fetch-onesignal.sh 拉取）
+      # 不用 SwiftPM 源码包：那个仓库 3GB，大陆网络克隆会反复超时
+      - framework: Vendor/OneSignal/OneSignalCore.xcframework
+        embed: true
+      - framework: Vendor/OneSignal/OneSignalOSCore.xcframework
+        embed: true
+      - framework: Vendor/OneSignal/OneSignalNotifications.xcframework
+        embed: true
+      - framework: Vendor/OneSignal/OneSignalExtension.xcframework
+        embed: true
+      - framework: Vendor/OneSignal/OneSignalOutcomes.xcframework
+        embed: true
+      - framework: Vendor/OneSignal/OneSignalUser.xcframework
+        embed: true
+      - framework: Vendor/OneSignal/OneSignalLiveActivities.xcframework
+        embed: true
+      - framework: Vendor/OneSignal/OneSignalFramework.xcframework
+        embed: true
 
 schemes:
   Ours:

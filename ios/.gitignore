@@ -1,4 +1,6 @@
 # XcodeGen 生成物
 *.xcodeproj
 Ours/Info.plist
+# 二进制依赖：由 scripts/fetch-onesignal.sh 拉取，不入库（约 148MB）
+Vendor/OneSignal/
 DerivedData/

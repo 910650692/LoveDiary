@@ -13,13 +13,18 @@
 brew install xcodegen
 ```
 
+> 前置：Xcode 装好后**必须打开一次**，让它装完「附加组件」（CoreSimulator 等）。没打开过的话 `xcodebuild` 会直接崩在 `IDESimulatorFoundation` 插件加载上。
+
 ## 跑起来
 
 ```bash
 cd ios
-xcodegen generate        # 生成 Ours.xcodeproj
+./scripts/fetch-onesignal.sh   # 拉 OneSignal 预编译框架（约 54MB，只需一次）
+xcodegen generate              # 生成 Ours.xcodeproj
 open Ours.xcodeproj
 ```
+
+为什么 OneSignal 不用 SwiftPM：它的源码仓库约 3GB，SwiftPM 全量克隆且不支持断点续传，大陆网络会反复超时。改用官方 release 的分体 XCFramework，二进制放 `Vendor/OneSignal/`（不入库）。
 
 在 Xcode 里：
 1. Signing & Capabilities → Team 选你的 Apple ID（个人开发免费签名即可真机跑）
@@ -36,7 +41,9 @@ open Ours.xcodeproj
 ## 目录结构
 
 ```
-project.yml                    # XcodeGen 配置（依赖：supabase-swift、OneSignal）
+project.yml                    # XcodeGen 配置（SPM：supabase-swift；二进制：OneSignal XCFramework）
+scripts/fetch-onesignal.sh     # 拉取 OneSignal 预编译框架到 Vendor/OneSignal
+Vendor/OneSignal/              # 8 个 XCFramework（不入库）
 Ours/
 ├── OursApp.swift              # 入口：OneSignal 初始化
 ├── AppConfig.swift            # Supabase URL / anon key / OneSignal App ID
