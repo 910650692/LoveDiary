@@ -123,6 +123,7 @@ struct OursView: View {
                 Text(daysTogether.map(String.init) ?? "—")
                     .font(.system(size: 44, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.oursPrimary)
+                    .accessibilityIdentifier("ours.days")
                 Text("在一起的天数")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -187,6 +188,7 @@ struct OursView: View {
             .buttonStyle(.borderedProminent)
             .tint(Color.oursPrimary)
             .disabled(isSigningOut)
+            .accessibilityIdentifier("ours.signOut")
 
             Text("退出不会删除任何回忆，下次登录还能看到。")
                 .font(.footnote)
@@ -227,6 +229,7 @@ struct OursView: View {
             .background(Color.oursBackground)
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
+        .accessibilityIdentifier("ours.debugPhotos")
     }
 #endif
 

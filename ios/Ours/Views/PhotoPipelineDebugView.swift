@@ -59,6 +59,7 @@ struct PhotoPipelineDebugView: View {
         .buttonStyle(.borderedProminent)
         .tint(Color.oursPrimary)
         .disabled(isProcessing)
+        .accessibilityIdentifier("photosDebug.picker")
     }
 
     private var summaryCard: some View {

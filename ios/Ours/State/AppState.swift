@@ -64,6 +64,16 @@ final class AppState: ObservableObject {
     /// 登出：清 Supabase session + 解绑 OneSignal 的 external_user_id + 清空本地登录态
     /// 不解绑的话，换账号后上一个人的推送还会发到这台机器
     func signOut() async {
+#if DEBUG
+        // UI 测试后门：假 session 下不发网络请求、不碰 OneSignal，只清本地态后直接返回。
+        // 必须先判定 isFakeSessionRequested——正常启动（无该参数）永远走不到这里。
+        if Self.isFakeSessionRequested {
+            isLoggedIn = false
+            couple = nil
+            PushRouter.shared.selectedTab = .home
+            return
+        }
+#endif
         try? await APIClient.signOut()
         syncPushIdentity(userId: nil)
         isLoggedIn = false

@@ -106,13 +106,112 @@ final class OursUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["我们在一起的天数"].waitForExistence(timeout: 10), "切不回主页")
     }
 
+    // MARK: - T4 「我们」页：在一起那天 / 天数 / 登出入口
+
+    func testT4_OursTabShowsTogetherCardAndSignOut() {
+        let app = launchFakeSession()
+        tapTab("我们", in: app)
+
+        XCTAssertTrue(app.navigationBars["我们"].waitForExistence(timeout: 10), "没切到我们页")
+
+        // 在一起那天：后门假 Couple 的 startedDate 写死 2023-05-20
+        XCTAssertTrue(app.staticTexts["从 2023年5月20日 开始"].waitForExistence(timeout: 10),
+                      "在一起那天没显示假 startedDate")
+
+        // 天数：只断言「标签在 + 数字区是纯数字」，不写死 1250（这个数每天都会变）
+        XCTAssertTrue(app.staticTexts["在一起的天数"].exists, "缺「在一起的天数」标签")
+        let days = app.staticTexts["ours.days"]
+        XCTAssertTrue(days.exists, "天数区域没渲染")
+        XCTAssertNotNil(Int(days.label), "天数区域不是纯数字：「\(days.label)」")
+
+        let signOut = app.buttons["ours.signOut"]
+        XCTAssertTrue(signOut.exists, "缺「退出登录」按钮")
+        XCTAssertTrue(signOut.label.contains("退出登录"), "登出按钮文案变了：「\(signOut.label)」")
+        XCTAssertTrue(signOut.isEnabled, "登出按钮初始就是禁用态")
+    }
+
+    // MARK: - T5 登出链路：二次确认 → 回登录页
+
+    func testT5_SignOutFromOursTabReturnsToSignIn() {
+        let app = launchFakeSession()
+        tapTab("我们", in: app)
+
+        let signOut = app.buttons["ours.signOut"]
+        XCTAssertTrue(signOut.waitForExistence(timeout: 10), "「我们」页没加载出登出按钮")
+        scrollIntoView(signOut, in: app)
+        signOut.tap()
+
+        // 二次确认：SwiftUI confirmationDialog 在 iPhone 上是 action sheet
+        let dialog = app.sheets.firstMatch
+        XCTAssertTrue(dialog.waitForExistence(timeout: 10), "二次确认对话框没弹出")
+
+        let confirm = dialog.buttons["退出登录"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "确认框里没有「退出登录」按钮")
+        // iPhone Duo / iOS 27.1 实测：这个 confirmationDialog 只渲染标题+说明+破坏性按钮，
+        // 「取消」不在可访问层级里（点空白处关闭），所以只断言标题与确认按钮
+        XCTAssertTrue(dialog.staticTexts["确定要退出登录吗？"].exists, "确认框标题不对")
+        confirm.tap()
+
+        // 假 session 下 AppState.signOut 走 DEBUG 短路（不发请求、不碰 OneSignal），应立刻回登录页
+        XCTAssertTrue(app.textFields["signin.email"].waitForExistence(timeout: 20), "没回到登录页（缺邮箱输入框）")
+        XCTAssertTrue(app.secureTextFields["signin.password"].exists, "登录页缺密码输入框")
+        XCTAssertTrue(app.buttons["signin.login"].exists, "登录页缺登录按钮")
+        XCTAssertFalse(app.navigationBars["我们"].exists, "登出后还停在「我们」页")
+    }
+
+    // MARK: - T6 DEBUG 照片管线自测页
+
+    func testT6_DebugPhotoPipelinePageOpens() {
+        let app = launchFakeSession()
+        tapTab("我们", in: app)
+
+        let entry = app.buttons["ours.debugPhotos"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 10), "「我们」页没有 DEBUG 照片自测入口")
+        scrollIntoView(entry, in: app)
+        entry.tap()
+
+        XCTAssertTrue(app.navigationBars["照片管线自测"].waitForExistence(timeout: 10), "自测页没打开")
+        XCTAssertTrue(app.buttons["photosDebug.picker"].waitForExistence(timeout: 10),
+                      "自测页缺「选择一张照片」按钮")
+        XCTAssertTrue(app.staticTexts["选一张照片，看压缩后的尺寸、体积与耗时"].exists, "自测页初始状态文案不对")
+
+        // 故意不点选图按钮：PhotosPicker 会拉起系统相册，UI 测试不去操作那个选择器
+    }
+
     // MARK: - 工具
+
+    /// 用 DEBUG 后门的假 session 启动：本地假 Couple，直接进「已绑定」，不碰云端
+    private func launchFakeSession() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            // App 内 #if DEBUG 后门：本地假 Couple，直接进「已绑定」
+            "-UITEST_FAKE_SESSION",
+            // 别弹系统推送权限（PushRouter 靠这个 UserDefaults 标记只问一次），否则挡住点击
+            "-push.permissionAsked", "YES",
+        ]
+        app.launch()
+        XCTAssertTrue(app.buttons["主页"].waitForExistence(timeout: 30), "主界面没出来（DEBUG 后门没生效？）")
+        return app
+    }
+
+    /// 元素在滚动容器里可能初始不可见：用滑动代替 sleep，最多 4 次
+    private func scrollIntoView(_ element: XCUIElement, in app: XCUIApplication) {
+        for _ in 0..<4 {
+            if element.isHittable { return }
+            app.swipeUp()
+        }
+    }
 
     /// 点某个 Tab 并断言它真的成了选中态（SwiftUI 给选中 Tab 打 Selected trait）
     private func tapTab(_ label: String, in app: XCUIApplication) {
         let button = app.buttons[label]
         XCTAssertTrue(button.waitForExistence(timeout: 10), "Tab 点不到：\(label)")
         button.tap()
-        XCTAssertTrue(button.isSelected, "点了之后 \(label) 没变成选中态")
+        // 选中态是异步落地的，用谓词等待而不是立即断言（整批连跑时上一轮模拟器还没闲下来会偶发失败）
+        let selected = XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "isSelected == true"), object: button
+        )
+        XCTAssertEqual(XCTWaiter().wait(for: [selected], timeout: 10), .completed,
+                       "点了之后 \(label) 没变成选中态")
     }
 }
