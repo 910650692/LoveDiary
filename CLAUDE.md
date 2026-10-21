@@ -29,7 +29,11 @@
 - iOS 阶段 1 骨架**首次编译通过**（`xcodebuild` BUILD SUCCEEDED，arm64 真机目标）：此前修掉 3 类必炸编译错误（supabase-swift 2.x 的 rpc 链式取值 / OneSignal 模块名 / project.yml 产品名）
 - OneSignal 依赖改为官方预编译 XCFramework + `ios/scripts/fetch-onesignal.sh`（`Vendor/OneSignal/` 不入库），不再依赖那个 3GB 的源码仓库
 - iOS 阶段 2 已实装（`6d525db`）：纪念日 / 心愿单全 CRUD + `APIClient` 写接口；同时修掉 PostgREST 不做 snake_case 转换导致的解码 bug（原模型非可选字段会 keyNotFound，`AppState.couple` 会永远 nil）
-- 剩余：iOS 在模拟器/真机**实际运行**（阶段 1 验收「Mac 上跑通」；需先下模拟器 runtime 或配真机签名）、阶段 2 运行验证、阶段 3 iOS 侧（通知点击跳转 + 推送权限申请）、推送真机验证（需 Apple 开发者账号 $99 配 APNs）、照片（阶段 4，需阿里云 OSS）
+- iOS **已在模拟器跑起来**（iOS 27.1 / iPhone Duo）：装包、启动、登录页渲染通过；真机 arm64 与模拟器 arm64 双目标构建全绿
+- iOS 阶段 3 推送侧完成（`d78e7da`）：权限申请只弹一次、通知点击按 `type` 切 Tab（anniversary/wishlist/couple_anniversary）、登出解绑 `OneSignal.logout()`
+- 主页倒计时改读 `anniversaries`（`3e61ee0`）：按年复现取最近一条、今天显示「就是今天」、空/失败回退恋爱周年、闰日归 2/28
+- 新增「我们」页 + 登出入口（`26ea455`）：两人昵称、在一起天数、二次确认登出（此前 App 内没有任何登出 UI）
+- 剩余：**运行态端到端**（注册→绑定→CRUD→登出真链路，需人点或真机）、推送真机验证（$99 开发者账号 + APNs 证书 + Push capability）、照片（阶段 4，需阿里云 OSS，约 1 元/月）、上架准备（Bundle ID 拍板、图标、启动图）
 
 ## 本机环境坑（已踩过）
 - Xcode 装完**必须打开一次**装附加组件，否则 `xcodebuild` 崩在 `IDESimulatorFoundation` 插件加载（缺 `/Library/Developer/PrivateFrameworks/CoreSimulator.framework`）
