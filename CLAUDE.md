@@ -30,6 +30,8 @@
 - OneSignal 依赖改为官方预编译 XCFramework + `ios/scripts/fetch-onesignal.sh`（`Vendor/OneSignal/` 不入库），不再依赖那个 3GB 的源码仓库
 - iOS 阶段 2 已实装（`6d525db`）：纪念日 / 心愿单全 CRUD + `APIClient` 写接口；同时修掉 PostgREST 不做 snake_case 转换导致的解码 bug（原模型非可选字段会 keyNotFound，`AppState.couple` 会永远 nil）
 - iOS **已在模拟器跑起来**（iOS 27.1 / iPhone Duo）：装包、启动、登录页渲染通过；真机 arm64 与模拟器 arm64 双目标构建全绿
+- ✅ **阶段 1 验收达成（2026-10-21）**：两个真实账号在模拟器完成注册 → 建关系 → 邀请码绑定，主页显示真实数据（在一起 1093 天 / 周年倒计时 3 天）——Auth → RLS → 解码 → 计算的第一次真实贯通
+- Supabase 已关闭「Confirm email」（原 Site URL 指向 `http://localhost:3000`，确认邮件链接点开必然无效）
 - iOS 阶段 3 推送侧完成（`d78e7da`）：权限申请只弹一次、通知点击按 `type` 切 Tab（anniversary/wishlist/couple_anniversary）、登出解绑 `OneSignal.logout()`
 - 主页倒计时改读 `anniversaries`（`3e61ee0`）：按年复现取最近一条、今天显示「就是今天」、空/失败回退恋爱周年、闰日归 2/28
 - 新增「我们」页 + 登出入口（`26ea455`）：两人昵称、在一起天数、二次确认登出（此前 App 内没有任何登出 UI）
