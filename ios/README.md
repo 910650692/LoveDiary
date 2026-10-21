@@ -58,6 +58,20 @@ T3 靠 `AppState` 里 **仅在 DEBUG 生效**的启动参数后门进入"已绑�
 
 > 注意：iOS 27 的 SwiftUI `TabView` 在 iPhone Duo 上渲染成右侧竖排浮动条，`app.tabBars` 为空 —— 测试用 `app.buttons[label]` 匹配，兼容旧版本 TabBar 形态。
 
+### T7 真注册（默认不编译，会写云端数据）
+
+验证「注册成功 → 直接进绑定页」这条真实链路。它会在 Supabase 里**创建一个随机邮箱账号**，所以用编译期开关隔离，默认不参与编译：
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test \
+  -project Ours.xcodeproj -scheme Ours \
+  -destination 'platform=iOS Simulator,name=iPhone Duo' \
+  OTHER_SWIFT_FLAGS='$(inherited) -D REAL_SIGNUP' \
+  -only-testing:OursUITests/OursUITests/testT7_RealSignupLandsOnBind
+```
+
+跑完记得去 **Dashboard → Authentication → Users** 删掉 `uitest+…@ourstest.app`。
+
 ## 首次使用前要确认的配置
 
 | 项 | 现状 | 说明 |

@@ -194,6 +194,46 @@ final class OursUITests: XCTestCase {
         return app
     }
 
+    // MARK: - T7 真注册（会写真实数据，默认不编译）
+#if REAL_SIGNUP
+
+    /// 走真实 Supabase 的注册链路，验证「注册成功 → 直接进绑定页」。
+    ///
+    /// ⚠️ 这条会**真的在项目里创建一个账号**（邮箱随机），所以用编译期开关隔离：
+    /// 默认不参与编译，要跑必须显式加标志：
+    ///   xcodebuild test ... OTHER_SWIFT_FLAGS='$(inherited) -D REAL_SIGNUP' \
+    ///     -only-testing:OursUITests/OursUITests/testT7_RealSignupLandsOnBind
+    /// 跑完去 Dashboard → Authentication → Users 删掉 `uitest+…@ourstest.app`。
+    func testT7_RealSignupLandsOnBind() throws {
+        let email = "uitest+\(Int(Date().timeIntervalSince1970))@ourstest.app"
+        let app = XCUIApplication()
+        app.launchArguments += ["-UITEST_SIGNED_OUT"]
+        app.launch()
+
+        let entry = app.buttons["signin.signup"]
+        XCTAssertTrue(entry.waitForExistence(timeout: 30), "注册入口没出现")
+        entry.tap()
+
+        let nickname = app.textFields["signup.nickname"]
+        XCTAssertTrue(nickname.waitForExistence(timeout: 10), "注册页没打开")
+        nickname.tap(); nickname.typeText("测试")
+        app.textFields["signup.email"].tap(); app.textFields["signup.email"].typeText(email)
+        app.secureTextFields["signup.password"].tap()
+        app.secureTextFields["signup.password"].typeText("ours123456")
+
+        app.buttons["signup.submit"].tap()
+
+        // 关键断言：注册成功后应当离开注册页、进入绑定页（而不是停在「去邮箱确认」）
+        let bindTitle = app.staticTexts["欢迎加入 Ours 🎈"]
+        _ = bindTitle.waitForExistence(timeout: 40)
+        if !bindTitle.exists {
+            print("=== 注册后卡住的界面层级 ===\n\(app.debugDescription)")
+        }
+        XCTAssertTrue(bindTitle.exists, "注册后没进绑定页（停在注册页或报了错）。邮箱：\(email)")
+        XCTAssertFalse(app.buttons["signup.submit"].exists, "注册页还开着，说明没跳走")
+    }
+#endif
+
     /// 元素在滚动容器里可能初始不可见：用滑动代替 sleep，最多 4 次
     private func scrollIntoView(_ element: XCUIElement, in app: XCUIApplication) {
         for _ in 0..<4 {

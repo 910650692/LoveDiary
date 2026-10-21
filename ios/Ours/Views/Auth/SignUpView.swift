@@ -81,14 +81,41 @@ struct SignUpView: View {
 
         do {
             try await APIClient.signUp(email: email, password: password, nickname: nickname)
-            // 若项目开启了邮箱确认，signUp 后不会自动登录
+            // signUp 本身不更新 AppState，必须刷新一次才知道有没有拿到 session：
+            // 邮箱确认关闭 → 直接有 session → 进绑定页；确认开启 → 无 session → 提示去邮箱确认
+            await app.refresh()
             if app.isLoggedIn {
                 dismiss()
             } else {
                 needConfirmEmail = true
             }
         } catch {
-            errorMessage = "注册失败：\(error.localizedDescription)"
+            errorMessage = Self.friendlyMessage(for: error)
         }
+    }
+
+    /// 把 Supabase 的英文报错翻成能看懂的中文。
+    /// 用文案匹配而不是错误码：SDK 的 AuthError 类型在不同版本里结构会变，文案更稳定。
+    private static func friendlyMessage(for error: Error) -> String {
+        let raw = error.localizedDescription
+        if raw.localizedCaseInsensitiveContains("already registered") {
+            return "这个邮箱已经注册过了，直接登录就好"
+        }
+        if raw.localizedCaseInsensitiveContains("password should be at least") {
+            return "密码太短了，至少 6 位"
+        }
+        if raw.localizedCaseInsensitiveContains("unable to validate email")
+            || raw.localizedCaseInsensitiveContains("invalid email") {
+            return "邮箱格式好像不对，检查一下"
+        }
+        if raw.localizedCaseInsensitiveContains("rate limit") {
+            return "操作太频繁了，等一会儿再试"
+        }
+        if raw.localizedCaseInsensitiveContains("network")
+            || raw.localizedCaseInsensitiveContains("internet")
+            || raw.localizedCaseInsensitiveContains("timed out") {
+            return "网络不太顺，检查一下连接再试"
+        }
+        return "注册失败：\(raw)"
     }
 }
