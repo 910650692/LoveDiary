@@ -6,6 +6,7 @@ enum MainTab: Int, Hashable {
     case home = 0
     case dates = 1
     case wishlist = 2
+    case me = 3
 }
 
 /// 推送点击路由：按 supabase/API.md「客户端接收约定」把通知 data["type"] 映射到主界面 Tab
