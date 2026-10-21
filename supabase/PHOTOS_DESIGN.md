@@ -1,6 +1,6 @@
 # 照片回忆（阶段 4）设计草案
 
-> 状态：**设计未拍板，未写迁移、未写代码**
+> 状态：**设计已拍板（2026-10-21）**；迁移文件已写但**尚未推送**（`supabase/migrations/20261021000000_stage4_photos.sql`）；iOS 端未写代码
 > 依据：`PRD.md` §4.2（云相册 / 相册 / 标签 / 时间线）+ 旧 Java 后端的 `backend/database_setup.sql`（albums/photos/tags/photo_tag）
 > 目标：把"照片存哪、怎么传、怎么读、花多少钱"四件事定死，等阿里云 OSS 开通即可直接进编码
 
@@ -35,8 +35,9 @@ create table public.photos (
   album_id uuid references public.albums(id) on delete set null,  -- null = 未分类
   creator_id uuid not null references public.profiles(id),
 
-  object_key text not null unique,        -- OSS 对象键（不含域名/bucket）
-  thumb_key text,                         -- 缩略图对象键，见 §5
+  object_key text not null unique,        -- 标准图（2048 长边压缩）对象键，不含域名/bucket
+  thumb_key text,                         -- 缩略图（400 长边）对象键，见 §5
+  original_key text,                      -- 原图对象键；仅「保留原图」开关开启时有值
   original_name text not null,
   file_size bigint not null check (file_size > 0),
   mime_type text not null,
@@ -170,14 +171,19 @@ iOS                      Supabase Edge Function           阿里云 OSS
 6. 主页随机回忆卡接真实照片
 7. 删除：软删数据库行 + 异步删 OSS 对象（或直接留下孤儿对象，定期清理）
 
-## 9. 待拍板（不拍板我不动代码）
+## 9. 决策记录（2026-10-21 已拍板）
 
-1. **要不要"多相册"？** 旧设计有 albums 表，但对两个人来说，"一条时间线 + 标签"更轻：少一层组织成本，标签足够表达"旅行/日常/第一张合照"。
-   - 推荐：**先只做时间线 + 标签**，albums 表建但不上界面（结构留着，将来要做不用迁移）
-2. **原图要不要保留？** 只存压缩图（2048 长边）省一半成本，但将来想印照片/做桌面壁纸就没了。
-   - 推荐：**保留原图但默认不传**——设置里给一个"保留原图"开关，默认关
-3. **标签要不要预置一批？**（旅行、美食、日常、纪念日…）
-   - 推荐：预置 4 个，可增删
+1. **相册形态：只做「时间线 + 标签」**。`albums` 表照建（将来要做不迁移），但 MVP 不上界面。
+2. **原图策略：三份对象模型**，语义已与产品确认：
+   | 对象 | 规格 | 何时存在 | 用途 |
+   |---|---|---|---|
+   | `thumb_key`（`_t.jpg`） | 长边 400 / ~50KB | **永远生成** | 列表与时间线 |
+   | `object_key`（`.jpg`） | 长边 2048 / ~400KB | **永远生成** | 点开看「标准图」 |
+   | `original_key`（`_o.jpg`） | 原图 3–8MB | 仅「保留原图」开关开启 | 「查看原图」按钮拉取 |
+
+   交互约定：查看照片**默认显示标准图**（点开即看，不等大文件）；只有该照片存在原图时才显示「查看原图」按钮，没有就不显示假按钮。
+   开关的含义因此很纯粹：**用不用上传时间换一张高清底片**（大陆上行带宽是真实瓶颈，不是钱）。
+3. **标签预置 4 个**（旅行 / 美食 / 日常 / 纪念日），可增删。
 
 ## 10. 已知风险
 
