@@ -26,8 +26,10 @@ struct SignInView: View {
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("signin.email")
                     SecureField("密码", text: $password)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("signin.password")
                 }
 
                 if let errorMessage {
@@ -45,11 +47,13 @@ struct SignInView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(Color.oursPrimary)
                 .disabled(isWorking)
+                .accessibilityIdentifier("signin.login")
 
                 Button("还没有账号？注册") {
                     showSignUp = true
                 }
                 .font(.footnote)
+                .accessibilityIdentifier("signin.signup")
 
                 Spacer()
             }

@@ -25,12 +25,15 @@ struct SignUpView: View {
                 VStack(spacing: 12) {
                     TextField("昵称", text: $nickname)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("signup.nickname")
                     TextField("邮箱", text: $email)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("signup.email")
                     SecureField("密码", text: $password)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityIdentifier("signup.password")
                 }
 
                 if needConfirmEmail {
@@ -53,6 +56,7 @@ struct SignUpView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(Color.oursPrimary)
                 .disabled(isWorking)
+                .accessibilityIdentifier("signup.submit")
 
                 Spacer()
             }
