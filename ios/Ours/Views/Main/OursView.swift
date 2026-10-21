@@ -16,6 +16,9 @@ struct OursView: View {
                 VStack(spacing: 20) {
                     coupleCard
                     togetherCard
+#if DEBUG
+                    debugPhotosEntry
+#endif
                     signOutSection
                     Spacer(minLength: 24)
                 }
@@ -201,6 +204,31 @@ struct OursView: View {
         await AppState.shared.signOut()
         isSigningOut = false
     }
+
+    // MARK: - DEBUG 入口（照片管线自测；正式包不编译）
+
+#if DEBUG
+    private var debugPhotosEntry: some View {
+        NavigationLink {
+            PhotoPipelineDebugView()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "wand.and.stars")
+                    .foregroundStyle(Color.oursGold)
+                Text("照片管线自测（DEBUG）")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.primary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .background(Color.oursBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+        }
+    }
+#endif
 
     // MARK: - 数据
 
