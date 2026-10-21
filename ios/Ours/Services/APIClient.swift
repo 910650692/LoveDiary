@@ -28,15 +28,21 @@ enum APIClient {
 
     /// 创建关系，返回 6 位邀请码
     static func createCouple(startedDate: Date) async throws -> String {
-        try await client.rpc(
+        let code: String = try await client.rpc(
             "create_couple",
             params: ["p_started_date": Self.dateOnlyFormatter.string(from: startedDate)]
         )
+        .execute()
+        .value
+        return code
     }
 
     /// 用邀请码加入，返回 couple_id
     static func joinCouple(code: String) async throws -> UUID {
-        try await client.rpc("join_couple", params: ["p_code": code])
+        let coupleId: UUID = try await client.rpc("join_couple", params: ["p_code": code])
+            .execute()
+            .value
+        return coupleId
     }
 
     // MARK: - 数据查询

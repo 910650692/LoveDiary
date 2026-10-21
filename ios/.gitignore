@@ -1,3 +1,4 @@
 # XcodeGen 生成物
 *.xcodeproj
+Ours/Info.plist
 DerivedData/

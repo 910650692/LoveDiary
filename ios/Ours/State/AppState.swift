@@ -1,5 +1,5 @@
 import Foundation
-import OneSignal
+import OneSignalFramework
 
 /// 全局状态：登录态 + 绑定态
 @MainActor

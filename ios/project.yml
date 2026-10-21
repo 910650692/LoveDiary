@@ -41,7 +41,7 @@ targets:
       - package: supabase
         product: Supabase
       - package: onesignal
-        product: OneSignal
+        product: OneSignalFramework
 
 schemes:
   Ours:

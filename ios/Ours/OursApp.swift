@@ -1,5 +1,5 @@
 import SwiftUI
-import OneSignal
+import OneSignalFramework
 
 @main
 struct OursApp: App {
