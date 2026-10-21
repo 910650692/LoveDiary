@@ -35,8 +35,8 @@
 - iOS 阶段 3 推送侧完成（`d78e7da`）：权限申请只弹一次、通知点击按 `type` 切 Tab（anniversary/wishlist/couple_anniversary）、登出解绑 `OneSignal.logout()`
 - 主页倒计时改读 `anniversaries`（`3e61ee0`）：按年复现取最近一条、今天显示「就是今天」、空/失败回退恋爱周年、闰日归 2/28
 - 新增「我们」页 + 登出入口（`26ea455`）：两人昵称、在一起天数、二次确认登出（此前 App 内没有任何登出 UI）
-- 阶段 4 照片已开工（不依赖 OSS 的部分做完）：设计定稿 + 建表迁移（`c8daa50`，**未推送**）+ iOS 图片管线（压缩/缩略图/EXIF/方向，纯 CoreGraphics，可在命令行实测）
-- 剩余：**迁移推送**（Supabase Dashboard SQL Editor 执行 `20261021000000_stage4_photos.sql`）、**OSS 开通后**写 `oss-sign` Edge Function + 上传/时间线 UI、**运行态端到端**（注册→绑定→CRUD→登出真链路，需人点或真机）、推送真机验证（$99 账号 + APNs 证书）、上架准备（Bundle ID 拍板、**占位图标/启动屏已就位**，正式视觉待替换）
+- 阶段 4 照片已开工：设计定稿 + **建表迁移已推送并核验**（`20261021000000_stage4_photos`：4 张表全开 RLS，共 15 条策略，索引齐全，台账已记录）+ iOS 图片管线（压缩/缩略图/EXIF/方向，纯 CoreGraphics，可在命令行实测）
+- 剩余：**阶段 2 的真实数据验收**（纪念日/心愿单 CRUD 还没在真库上点过）、**「修改在一起日期」入口**（当前只能改库）、**OSS 开通后**写 `oss-sign` + 上传/时间线、推送真机验证（$99 账号 + APNs 证书）、上架准备（Bundle ID 拍板、正式视觉替换）
 
 ## 本机环境坑（已踩过）
 - Xcode 装完**必须打开一次**装附加组件，否则 `xcodebuild` 崩在 `IDESimulatorFoundation` 插件加载（缺 `/Library/Developer/PrivateFrameworks/CoreSimulator.framework`）
