@@ -2,28 +2,31 @@ import SwiftUI
 
 /// 主界面三个 Tab：主页 / 重要日期 / 心愿单
 struct MainTabView: View {
-    @State private var selection = 0
+    /// 选中态提到 PushRouter：通知点击跳到哪个 Tab 由它决定
+    @StateObject private var router = PushRouter.shared
 
     var body: some View {
-        TabView(selection: $selection) {
+        TabView(selection: $router.selectedTab) {
             HomeView()
                 .tabItem {
                     Label("主页", systemImage: "heart.fill")
                 }
-                .tag(0)
+                .tag(MainTab.home)
 
             DatesView()
                 .tabItem {
                     Label("纪念日", systemImage: "calendar")
                 }
-                .tag(1)
+                .tag(MainTab.dates)
 
             WishlistView()
                 .tabItem {
                     Label("心愿单", systemImage: "gift.fill")
                 }
-                .tag(2)
+                .tag(MainTab.wishlist)
         }
         .tint(Color.oursPrimary)
+        // 进主界面才申请推送权限（只弹一次，见 PushRouter.requestPermissionIfNeeded）
+        .task { router.requestPermissionIfNeeded() }
     }
 }
