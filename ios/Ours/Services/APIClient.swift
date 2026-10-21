@@ -24,6 +24,11 @@ enum APIClient {
         try await client.auth.signOut()
     }
 
+    /// 当前登录用户 id（写操作要记 creator_id / completer_id / created_by）
+    static func currentUserId() async throws -> UUID {
+        try await client.auth.session.user.id
+    }
+
     // MARK: - 情侣绑定
 
     /// 创建关系，返回 6 位邀请码
@@ -83,12 +88,140 @@ enum APIClient {
             .value
     }
 
+    // MARK: - 重要日期（写）
+
+    /// 新增重要日期 → POST anniversaries，返回新行
+    static func createAnniversary(
+        coupleId: UUID,
+        createdBy: UUID,
+        name: String,
+        date: Date,
+        notes: String?,
+        enableNotification: Bool
+    ) async throws -> Anniversary {
+        var payload: [String: AnyJSON] = [
+            "couple_id": .string(coupleId.uuidString),
+            "created_by": .string(createdBy.uuidString),
+            "name": .string(name),
+            "date": .string(Self.dateOnlyFormatter.string(from: date)),
+            "enable_notification": .bool(enableNotification),
+        ]
+        if let notes, !notes.isEmpty {
+            payload["notes"] = .string(notes)
+        }
+
+        let created: Anniversary = try await client.from("anniversaries")
+            .insert(payload)
+            .select()
+            .single()
+            .execute()
+            .value
+        return created
+    }
+
+    /// 修改重要日期 → PATCH anniversaries?id=eq.<id>，返回更新后的行
+    static func updateAnniversary(
+        id: UUID,
+        name: String,
+        date: Date,
+        notes: String?,
+        enableNotification: Bool
+    ) async throws -> Anniversary {
+        let payload: [String: AnyJSON] = [
+            "name": .string(name),
+            "date": .string(Self.dateOnlyFormatter.string(from: date)),
+            "notes": notes.map { .string($0) } ?? .null,   // 备注清空时显式置 NULL
+            "enable_notification": .bool(enableNotification),
+        ]
+
+        let updated: Anniversary = try await client.from("anniversaries")
+            .update(payload)
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return updated
+    }
+
+    /// 删除重要日期 → DELETE anniversaries?id=eq.<id>（API.md：纪念日走真实删除）
+    static func deleteAnniversary(id: UUID) async throws {
+        try await client.from("anniversaries")
+            .delete(returning: .minimal)
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    // MARK: - 共同心愿单（写）
+
+    /// 新增心愿 → POST wishlist_items，返回新行
+    static func createWishlistItem(
+        coupleId: UUID,
+        creatorId: UUID,
+        title: String,
+        description: String?
+    ) async throws -> WishlistItem {
+        var payload: [String: AnyJSON] = [
+            "couple_id": .string(coupleId.uuidString),
+            "creator_id": .string(creatorId.uuidString),
+            "title": .string(title),
+        ]
+        if let description, !description.isEmpty {
+            payload["description"] = .string(description)
+        }
+
+        let created: WishlistItem = try await client.from("wishlist_items")
+            .insert(payload)
+            .select()
+            .single()
+            .execute()
+            .value
+        return created
+    }
+
+    /// 标记完成 → PATCH wishlist_items?id=eq.<id>：status + completer_id + completed_at 一起写
+    static func completeWishlistItem(id: UUID, completerId: UUID) async throws -> WishlistItem {
+        let payload: [String: AnyJSON] = [
+            "status": .string("COMPLETED"),
+            "completer_id": .string(completerId.uuidString),
+            "completed_at": .string(Self.timestampFormatter.string(from: Date())),
+        ]
+
+        let updated: WishlistItem = try await client.from("wishlist_items")
+            .update(payload)
+            .eq("id", value: id.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return updated
+    }
+
+    /// 软删除心愿 → PATCH wishlist_items?id=eq.<id> {is_deleted:true}（API.md 明文约定）
+    static func softDeleteWishlistItem(id: UUID) async throws {
+        let payload: [String: AnyJSON] = ["is_deleted": .bool(true)]
+        try await client.from("wishlist_items")
+            .update(payload, returning: .minimal)
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
     // MARK: - 工具
 
     /// YYYY-MM-DD（与数据库 date 字段格式一致）
     static let dateOnlyFormatter: DateFormatter = {
         let f = DateFormatter()
+        // 固定 POSIX 区域 + 公历，避免设备用佛历/民国历时 yyyy-MM-dd 漂移写错库
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.calendar = Calendar(identifier: .gregorian)
         f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    /// ISO8601（与数据库 timestamptz 对齐，用于 completed_at）
+    static let timestampFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
         return f
     }()
 }
