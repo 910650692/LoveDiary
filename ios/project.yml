@@ -30,8 +30,8 @@ targets:
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:
-        # 占位 Bundle ID：PRD 待定项，上架前定
-        PRODUCT_BUNDLE_IDENTIFIER: com.ours.app
+        # Bundle ID 已拍板（2026-10-21）：注册 App ID 后就基本不能改了
+        PRODUCT_BUNDLE_IDENTIFIER: app.ours.diary
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"   # iPhone only
         CODE_SIGN_STYLE: Automatic
@@ -73,7 +73,7 @@ targets:
       - path: OursUITests
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.ours.app.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: app.ours.diary.uitests
         SWIFT_VERSION: "5.9"
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic

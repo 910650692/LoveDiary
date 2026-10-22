@@ -76,7 +76,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test \
 
 | 项 | 现状 | 说明 |
 |---|---|---|
-| Bundle ID | 占位 `com.ours.app` | PRD 待定，上架前定；改 `project.yml` 后重新 `xcodegen generate` |
+| Bundle ID | **`app.ours.diary`**（2026-10-21 拍板）| 注册 App ID 后基本不能改；改 `project.yml` 的 `PRODUCT_BUNDLE_IDENTIFIER` 后重新 `xcodegen generate` |
 | 邮箱确认 | ⚠️ 需手动关掉 | Supabase 新项目默认 **Confirm email 开启**，而 `Site URL` 默认是 `http://localhost:3000` —— 确认邮件里的链接就指向这个本机空端口，**点开必然打不开**（QQ 邮箱还会包一层 `xmspamcheck` 跳转）。<br>**开发期做法**：Dashboard → Authentication → Providers → Email → **Confirm email OFF**。<br>**注意**：关开关不会确认已存在的用户 —— 已注册的账号要再去 Authentication → Users 手动 **Confirm user** 或删掉重注册，否则登录仍报 `Email not confirmed`。<br>**上架前若要真邮件闭环**：改 `Site URL` + 给 app 加 URL Scheme + 配 Redirect URLs 白名单。 |
 | Push | 已接 OneSignal SDK | 通知要真机生效还需：Xcode 里加 Push Notifications capability + OneSignal 后台配 APNs（需 Apple 开发者账号 $99） |
 
