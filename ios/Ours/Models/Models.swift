@@ -132,6 +132,8 @@ struct PhotoSignBatch: Decodable {
         let photoId: UUID
         /// variant → 预签名 PUT URL（"standard" / "thumb" / "original"）
         let putUrls: [String: String]
+        /// variant → 预签名 GET URL（读照片用；键来自请求里的 `keys`，见 API.md）
+        let getUrls: [String: String]?
         let getUrl: String
 
         /// 由预签名 URL 反推 OSS 对象键：path 才是键，query 是签名参数
@@ -139,6 +141,39 @@ struct PhotoSignBatch: Decodable {
             guard let value = putUrls[variant], let url = URL(string: value) else { return nil }
             let path = url.path
             return path.hasPrefix("/") ? String(path.dropFirst()) : path
+        }
+
+        /// 某个变体的预签名 GET URL（服务端只按请求的 variants 给，没给就是 nil）
+        func getURL(for variant: String) -> URL? {
+            getUrls?[variant].flatMap(URL.init(string:))
+        }
+    }
+}
+
+/// 读签名的请求项：photoId + 该照片在库里的真实对象键。
+/// 键必须是库里的（`thumb_key` / `object_key` / `original_key`），不能让服务端按「今天」拼：
+/// 上个月传的照片在 `couples/<id>/<yyyy>/<MM>/` 里的月份不是今天。
+struct PhotoReadRequest: Hashable {
+    let photoId: UUID
+    /// variant → OSS 对象键
+    let keys: [String: String]
+}
+
+/// `oss-sign` 读签名的结果：有效期 + photoId → (variant → 预签名 GET URL)
+struct PhotoReadSignatures {
+    let expiresIn: Int
+    let urls: [UUID: [String: URL]]
+}
+
+extension Photo {
+    /// 某个变体在库里的对象键
+    /// - 缩略图缺失时回退标准图（老数据可能没缩略图，格子不能空着）
+    /// - `original` 没有就是没有（「查看原图」按钮靠它判断显不显示）
+    func objectKey(for variant: String) -> String? {
+        switch variant {
+        case "thumb": return thumbKey ?? objectKey
+        case "original": return originalKey
+        default: return objectKey
         }
     }
 }

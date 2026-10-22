@@ -1,11 +1,17 @@
 // Supabase Edge Function: oss-sign
 // 作用：用登录用户的 JWT 换 OSS 预签名 URL（只签名，不搬文件）
-// 设计依据：supabase/PHOTOS_DESIGN.md §4 方案 B
+// 设计依据：supabase/PHOTOS_DESIGN.md §4 方案 B + §9 三份对象模型（_t / 标准 / _o）
 //
 // 安全要点：
 // 1. AccessKey 只放在 Edge Function secrets，永不下发客户端
 // 2. 对象键前缀强制钉死为 couples/<我的 couple_id>/...，客户端无法为别人的前缀要签名
 // 3. 只签 PUT/GET，不给删除、列举权限
+//
+// 一次响应里同时给两类签名：
+// - putUrls：**上传**用。键由服务端按「今天」拼，客户端插库前拿它直传
+// - getUrls：**读取**用。键优先用请求里的 keys（就是 photos 行的 object_key/thumb_key/original_key），
+//   没给才回落到同一套「今天」拼法。时间线读上个月甚至前年的照片必须靠 keys：
+//   只按 today 拼路径会指向一个根本不存在的对象。
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import OSS from "npm:ali-oss@6";
@@ -24,22 +30,34 @@ const json = (body: unknown, status = 200) =>
 
 type Variant = "standard" | "thumb" | "original";
 
+const ALL_VARIANTS: Variant[] = ["standard", "thumb", "original"];
+
 interface SignItem {
   photoId: string;
-  variants?: Variant[];   // 默认 ["standard", "thumb"]
+  variants?: Variant[];                // 默认 ["standard", "thumb"]（与上传契约一致）
+  keys?: Partial<Record<Variant, string>>; // 读已存在对象时给真实键；不给则按今天拼
 }
 
-// 每张照片最多三个对象，命名见 PHOTOS_DESIGN §5
+// 每张照片最多三个对象，命名见 PHOTOS_DESIGN §9
 const suffixOf: Record<Variant, string> = {
   standard: "",
   thumb: "_t",
   original: "_o",
 };
 
+const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+
 function objectKey(coupleId: string, photoId: string, variant: Variant, now: Date): string {
   const yyyy = now.getUTCFullYear();
   const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
   return `couples/${coupleId}/${yyyy}/${mm}/${photoId}${suffixOf[variant]}.jpg`;
+}
+
+/// 客户端传来的键只放行一种形态：前缀钉在调用者自己的 couple 目录下、uuid 文件名 + 可选 _t/_o 后缀。
+/// 这是「不能替别人的照片要签名」的唯一防线，比任何客户端校验都可靠。
+function isOwnKey(key: unknown, coupleId: string): key is string {
+  if (typeof key !== "string" || key.length > 200) return false;
+  return new RegExp(`^couples/${coupleId}/\\d{4}/\\d{2}/${UUID}(_t|_o)?\\.jpg$`, "i").test(key);
 }
 
 Deno.serve(async (req) => {
@@ -81,9 +99,21 @@ Deno.serve(async (req) => {
   if (!Array.isArray(items) || items.length === 0) return json({ error: "items 不能为空" }, 400);
   if (items.length > 20) return json({ error: "一次最多签 20 张（跨境 RTT 成本）" }, 400);
 
-  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   for (const it of items) {
-    if (!it?.photoId || !uuidRe.test(it.photoId)) return json({ error: "photoId 必须是 uuid" }, 400);
+    if (!it?.photoId || !new RegExp(`^${UUID}$`, "i").test(it.photoId)) {
+      return json({ error: "photoId 必须是 uuid" }, 400);
+    }
+    for (const v of it.variants ?? []) {
+      if (!ALL_VARIANTS.includes(v)) {
+        return json({ error: "variants 只能是 standard / thumb / original" }, 400);
+      }
+    }
+    for (const v of ALL_VARIANTS) {
+      const key = it.keys?.[v];
+      if (key !== undefined && !isOwnKey(key, coupleId)) {
+        return json({ error: "keys 不合法：对象键必须在你自己的 couple 目录下" }, 400);
+      }
+    }
   }
 
   // 4) 生成预签名 URL
@@ -95,20 +125,25 @@ Deno.serve(async (req) => {
     secure: true,
   });
 
-  const expiresIn = 900; // 15 分钟，够上传一批
+  const expiresIn = 900; // 15 分钟：够上传一批、刷一屏；过期客户端重签一次即可
   const now = new Date();
   const signed = items.map((it) => {
     const variants = it.variants?.length ? it.variants : (["standard", "thumb"] as Variant[]);
-    const urls: Record<string, string> = {};
+    const putUrls: Record<string, string> = {};
+    const getUrls: Record<string, string> = {};
     for (const v of variants) {
-      const key = objectKey(coupleId, it.photoId, v, now);
-      urls[v] = client.signatureUrl(key, { expires: expiresIn, method: "PUT" });
+      const freshKey = objectKey(coupleId, it.photoId, v, now);
+      putUrls[v] = client.signatureUrl(freshKey, { expires: expiresIn, method: "PUT" });
+      // 读：库里的真实键优先（老照片的 yyyy/MM 与今天不同）
+      getUrls[v] = client.signatureUrl(it.keys?.[v] ?? freshKey, { expires: expiresIn, method: "GET" });
     }
-    const readKey = objectKey(coupleId, it.photoId, "standard", now);
+    const standardReadKey = it.keys?.standard ?? objectKey(coupleId, it.photoId, "standard", now);
     return {
       photoId: it.photoId,
-      putUrls: urls,
-      getUrl: client.signatureUrl(readKey, { expires: expiresIn, method: "GET" }),
+      putUrls,
+      getUrls,
+      // 老的单一 getUrl 保留：已上线的客户端在用，别让它们 404
+      getUrl: client.signatureUrl(standardReadKey, { expires: expiresIn, method: "GET" }),
     };
   });
 

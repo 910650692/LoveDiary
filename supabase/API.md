@@ -136,11 +136,27 @@ AccessKey 只存 Supabase Edge Function secrets，**永不下发客户端**。iO
 ### `POST /functions/v1/oss-sign`
 请求头：`Authorization: Bearer <用户 JWT>`（Edge Function 默认 verify_jwt）
 
+请求（**上传**：只给 photoId + variants，与阶段 4 原契约完全一致，已上线客户端不用改）：
 ```json
 { "items": [ { "photoId": "8f3a…-uuid", "variants": ["standard", "thumb"] } ] }
 ```
 
-响应：
+请求（**读取**：把 photos 行里的真实对象键放进 `keys`）：
+```json
+{
+  "items": [{
+    "photoId": "8f3a…-uuid",
+    "variants": ["thumb"],
+    "keys": {
+      "thumb":    "couples/34ce59e5-…/2026/10/8f3a…_t.jpg",
+      "standard": "couples/34ce59e5-…/2026/10/8f3a….jpg",
+      "original": "couples/34ce59e5-…/2026/10/8f3a…_o.jpg"
+    }
+  }]
+}
+```
+
+响应（`putUrls`/`getUrl` 是老字段，只增不改）：
 ```json
 {
   "coupleId": "34ce59e5-…",
@@ -151,16 +167,29 @@ AccessKey 只存 Supabase Edge Function secrets，**永不下发客户端**。iO
       "standard": "https://ours-photos-jw.oss-cn-shanghai.aliyuncs.com/couples/34ce59e5-…/2026/10/8f3a….jpg?x-oss-…",
       "thumb":    "https://…/8f3a…_t.jpg?x-oss-…"
     },
+    "getUrls": {
+      "standard": "https://…/8f3a….jpg?x-oss-…",
+      "thumb":    "https://…/8f3a…_t.jpg?x-oss-…"
+    },
     "getUrl": "https://…/8f3a….jpg?x-oss-…"
   }]
 }
 ```
 
+字段语义：
+- `putUrls`：**上传**用，键由服务端按「当天」拼（客户端插库前拿它直传）
+- `getUrls`：**读取**用，键优先取请求里的 `keys`，没给才回落到与 `putUrls` 同一套拼法。
+  键与 `variants` 一一对应：只请求 `["thumb"]` 就只有 `getUrls.thumb`，原图只在请求 `"original"` 时出现
+- `getUrl`：历史字段，等价于标准图 GET；保留是为了不带 `keys` 的老客户端不炸
+
 约束（服务端强制，客户端别绕）：
-- 一次最多 **20 张**（跨境 RTT 成本）
+- 一次最多 **20 张**（跨境 RTT 成本）→ **时间线一页 30 张必须拆成 2 次调用**（客户端分片）
 - `photoId` 必须是 uuid；对象键由服务端拼，规则：
   `couples/<我的 couple_id>/<yyyy>/<MM>/<photo_id>{,_t,_o}.jpg`
-  （`_t` 缩略图、`_o` 原图；见 `PHOTOS_DESIGN.md` §5 三份对象模型）
+  （`_t` 缩略图、`_o` 原图；见 `PHOTOS_DESIGN.md` §9 三份对象模型）
+- `keys` 每个值都必须是 **自己 couple 目录下**的 `.jpg`：
+  服务端按 `^couples/<我的 couple_id>/<yyyy>/<MM>/<uuid>(_t|_o)?\.jpg$` 校验，别人的前缀或 `..` 穿越一律 `400`
+- **读老照片必须带 `keys`**：服务端只会按「当天」拼 yyyy/MM，不给真实键就会签出一个不存在的对象（`404`）
 - URL 有效期 **900 秒**，过期需重新要一次
 - 只签 PUT / GET，**不签删除与列举**
 
@@ -173,6 +202,21 @@ AccessKey 只存 Supabase Edge Function secrets，**永不下发客户端**。iO
 4. 插 `photos` 行（`object_key` / `thumb_key` / `size` / `width` / `height` / `taken_at`），RLS 保证建在自己 couple 下
 5. 若有原图（设置里开启）再 PUT `_o.jpg` 并回填 `original_key`
 
-### 已验证（2026-10-21）
-真机链路已跑通：临时用户 → 真 JWT → `oss-sign` 200 → 预签名 URL 直传 **PUT 200** →
-**GET 200 内容一致** → 临时用户/couple 已清理。bucket 私有策略与 RAM 最小权限均生效。
+### 客户端读取（时间线）顺序
+1. PostgREST 查 `photos`（RLS + `is_deleted=eq.false`）：
+   `order=taken_at.desc.nullslast,created_at.desc`，**keyset 分页每页 30**，
+   游标是上一页最后一行的 `(taken_at, created_at, id)`（`taken_at` 为 null 的那段只用 `(created_at, id)`）
+2. 每页 30 张的 `thumb_key`（为空回退 `object_key`）打包成 `keys` 调 `oss-sign`，
+   **超过 20 张拆成两次**（服务端上限）
+3. 拿 `getUrls.thumb` 用 `URLSession` 直连 OSS 拉图；签名 URL 按**对象键**缓存在内存里并记下过期时刻
+4. 点开看大图用 `getUrls.standard`；`original_key` 非空时才显示「查看原图」，点了才要 `getUrls.original`
+5. **过期兜底**：缓存的签名 URL 超过 900 秒会 403，按同一对象键**重签一次再重试**，
+   仍失败才显示占位，不要直接把破图糊到用户脸上
+
+### 已验证
+- **2026-10-21 上传链路**：临时用户 → 真 JWT → `oss-sign` 200 → 预签名 URL 直传 **PUT 200** →
+  **GET 200 内容一致** → 临时用户/couple 已清理。bucket 私有策略与 RAM 最小权限均生效。
+- **2026-10-22 读签名（getUrls）**：临时用户 → 真 JWT → `oss-sign` 200（`putUrls`/`getUrl` 老字段不变，
+  新增 `getUrls`）→ PUT 缩略图与原图各 **200** → 用 `getUrls.thumb` / `getUrls.original` **GET 200 且字节一致**；
+  跨月老键（`2026/01/…`）原样透传进签名（该对象本不存在，GET 404 符合预期）；
+  别人的 couple 前缀 / `..` 穿越 / 非法变体全部 **400**，无 JWT **401**，裸 GET（无签名）**403**。

@@ -217,6 +217,46 @@ enum APIClient {
         variants: [String] = ["standard", "thumb"]
     ) async throws -> PhotoSignBatch {
         guard !photoIds.isEmpty else { throw APIClientError.emptyBatch }
+        return try await postSign(SignRequest(items: photoIds.map {
+            SignRequest.Item(photoId: $0.uuidString, variants: variants, keys: nil)
+        }))
+    }
+
+    /// 读签名：把 photos 行里的**真实对象键**换成预签名 GET URL（时间线缩略图、详情标准图、原图都走它）。
+    ///
+    /// 服务端一次最多 20 张，这里按 20 分片**依次**请求：时间线一页 30 张 = 2 次 HTTP。
+    /// 分片失败整个方法抛错（调用方负责「图上没出来」的兜底），不做半成功。
+    static func signPhotoReads(
+        requests: [PhotoReadRequest],
+        variants: [String]
+    ) async throws -> PhotoReadSignatures {
+        guard !requests.isEmpty, !variants.isEmpty else {
+            return PhotoReadSignatures(expiresIn: PhotoReadLimits.expiresIn, urls: [:])
+        }
+
+        var urls: [UUID: [String: URL]] = [:]
+        var expiresIn = PhotoReadLimits.expiresIn
+        var index = 0
+        while index < requests.count {
+            let end = min(index + PhotoReadLimits.signBatchSize, requests.count)
+            let batch = try await postSign(SignRequest(items: requests[index..<end].map {
+                SignRequest.Item(photoId: $0.photoId.uuidString, variants: variants, keys: $0.keys)
+            }))
+            expiresIn = batch.expiresIn
+            for item in batch.items {
+                var perVariant: [String: URL] = [:]
+                for variant in variants {
+                    if let url = item.getURL(for: variant) { perVariant[variant] = url }
+                }
+                if !perVariant.isEmpty { urls[item.photoId] = perVariant }
+            }
+            index = end
+        }
+        return PhotoReadSignatures(expiresIn: expiresIn, urls: urls)
+    }
+
+    /// 打一次 oss-sign（上传与读取共用：同一个端点、同一套鉴权）
+    private static func postSign(_ body: SignRequest) async throws -> PhotoSignBatch {
         guard let url = URL(string: AppConfig.supabaseURL + "/functions/v1/oss-sign") else {
             throw APIClientError.badRequest
         }
@@ -228,9 +268,7 @@ enum APIClient {
         request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
         request.setValue(AppConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(
-            SignRequest(items: photoIds.map { SignRequest.Item(photoId: $0.uuidString, variants: variants) })
-        )
+        request.httpBody = try JSONEncoder().encode(body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try Self.throwIfEdgeFailed(response, data: data)
@@ -279,13 +317,57 @@ enum APIClient {
         return created
     }
 
-    /// 最近的几张（上传页底部先只用它列文件名；时间线 keyset 分页是下一单）
+    /// 最近的几张（上传完立刻回显用）
     static func fetchRecentPhotos(coupleId: UUID, limit: Int = 6) async throws -> [Photo] {
         try await client.from("photos")
             .select()
             .eq("couple_id", value: coupleId.uuidString)
             .eq("is_deleted", value: false)
             .order("created_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
+
+    // MARK: - 照片时间线（keyset 分页）
+
+    /// 时间线一页：`taken_at desc nulls last, created_at desc, id desc`
+    ///
+    /// 为什么不用 offset：翻页期间新传一张就会让后面每一页错位（重复/漏项）。
+    /// keyset 用「上一页最后一行的排序键」当锚点，锚点不变，结果就不变。
+    /// - Parameter cursor: nil = 第一页
+    static func fetchPhotoPage(
+        coupleId: UUID,
+        cursor: PhotoCursor? = nil,
+        limit: Int = PhotoReadLimits.pageSize
+    ) async throws -> [Photo] {
+        var query = client.from("photos")
+            .select()
+            .eq("couple_id", value: coupleId.uuidString)
+            .eq("is_deleted", value: false)
+
+        switch cursor {
+        case nil:
+            break
+        case .takenAfter(let takenAt, let createdAt, let id):
+            // 三段合并：拍摄时间更早 / 同一拍摄时间但入库更早 / 两者都相同再用 id 兜底
+            let t = Self.cursorTimestamp(takenAt)
+            let c = Self.cursorTimestamp(createdAt)
+            query = query.or(
+                "taken_at.lt.\(t),and(taken_at.eq.\(t),created_at.lt.\(c)),and(taken_at.eq.\(t),created_at.eq.\(c),id.lt.\(id.uuidString))"
+            )
+        case .nullHead:
+            query = query.is("taken_at", value: nil)
+        case .nullAfter(let createdAt, let id):
+            let c = Self.cursorTimestamp(createdAt)
+            query = query.is("taken_at", value: nil)
+                .or("created_at.lt.\(c),and(created_at.eq.\(c),id.lt.\(id.uuidString))")
+        }
+
+        return try await query
+            .order("taken_at", ascending: false, nullsFirst: false)
+            .order("created_at", ascending: false)
+            .order("id", ascending: false)
             .limit(limit)
             .execute()
             .value
@@ -310,6 +392,22 @@ enum APIClient {
         return f
     }()
 
+    /// 分页游标的时间戳：微秒精度，且只用 `Z` 结尾
+    ///
+    /// 两个坑都得绕开：
+    /// - 精度：Postgres timestamptz 与 supabase-swift 的解码都是微秒；截断到秒/毫秒会让
+    ///   同一窗口内入库的行在 keyset 比较里失配（漏项）
+    /// - **绝不能输出 `+00:00`**：URL query 里的 `+` 会被服务端解成空格，PostgREST 直接 400
+    static func cursorTimestamp(_ date: Date) -> String {
+        let micros = (date.timeIntervalSince1970 * 1_000_000).rounded()
+        // 1970 年之前（翻拍的老照片）不拼微秒，秒级足够
+        guard micros >= 0 else { return Self.timestampFormatter.string(from: date) }
+        let total = Int64(micros)
+        let base = Self.timestampFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(total / 1_000_000)))
+        guard base.hasSuffix("Z") else { return base }
+        return String(base.dropLast()) + String(format: ".%06lldZ", total % 1_000_000)
+    }
+
     // MARK: - Edge Function 请求体 / 错误
 
     private struct SignRequest: Encodable {
@@ -318,6 +416,8 @@ enum APIClient {
         struct Item: Encodable {
             let photoId: String
             let variants: [String]
+            /// 读已存在的对象时给库里的真实键；上传/新照片传 nil（服务端按当天拼）
+            let keys: [String: String]?
         }
     }
 
@@ -336,6 +436,31 @@ enum APIClient {
             )
         }
     }
+}
+
+/// 时间线分页游标。
+///
+/// `taken_at desc nulls last` 把照片分成两段，两段排序键不同，所以游标也分两种：
+/// - 前段：有拍摄时间，键是 `(taken_at, created_at, id)`
+/// - 后段：`taken_at is null`，键是 `(created_at, id)`
+/// 只用 `created_at` 不够：连拍照片同一个 `taken_at`，光比入库时间会漏掉同毫秒的行。
+enum PhotoCursor: Hashable {
+    /// 「有拍摄时间」那一段某行之后
+    case takenAfter(takenAt: Date, createdAt: Date, id: UUID)
+    /// 前段已取完，进入 `taken_at` 为 null 的那一段（等于从这段头部开始，没有上界）
+    case nullHead
+    /// null 段某行之后
+    case nullAfter(createdAt: Date, id: UUID)
+}
+
+/// 读链路的硬约束（与 supabase/API.md 对齐）
+enum PhotoReadLimits {
+    /// 时间线每页张数
+    static let pageSize = 30
+    /// `oss-sign` 一次最多签 20 张
+    static let signBatchSize = 20
+    /// 签名 URL 有效期兜底值（服务端响应里的 `expiresIn` 优先）
+    static let expiresIn = 900
 }
 
 /// 照片上传链路的客户端错误（Edge Function 的中文 error 直接透传）
