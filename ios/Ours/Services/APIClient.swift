@@ -206,6 +206,91 @@ enum APIClient {
             .execute()
     }
 
+    // MARK: - 照片（阶段 4：oss-sign + 插行）
+
+    /// 一批照片换 OSS 预签名 PUT URL。
+    ///
+    /// **一批一次请求**：服务端一次最多签 20 张，逐张请一次会把跨境 RTT 乘以张数。
+    /// - Parameter variants: 需要签的对象（标准图 "standard"、缩略图 "thumb"）
+    static func signPhotoUploads(
+        photoIds: [UUID],
+        variants: [String] = ["standard", "thumb"]
+    ) async throws -> PhotoSignBatch {
+        guard !photoIds.isEmpty else { throw APIClientError.emptyBatch }
+        guard let url = URL(string: AppConfig.supabaseURL + "/functions/v1/oss-sign") else {
+            throw APIClientError.badRequest
+        }
+
+        // Edge Function 默认 verify_jwt：必须带用户 access_token；apikey 与 REST 一样照带
+        let session = try await client.auth.session
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue(AppConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(
+            SignRequest(items: photoIds.map { SignRequest.Item(photoId: $0.uuidString, variants: variants) })
+        )
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try Self.throwIfEdgeFailed(response, data: data)
+        return try JSONDecoder().decode(PhotoSignBatch.self, from: data)
+    }
+
+    /// 插一行 photos。
+    ///
+    /// `id` 用客户端生成的 photoId：服务端拼对象键时用的就是它（`.../<photoId>.jpg`），
+    /// 两边必须是同一个 uuid，否则库里的行找不到自己的对象。
+    static func insertPhoto(
+        id: UUID,
+        coupleId: UUID,
+        creatorId: UUID,
+        objectKey: String,
+        thumbKey: String?,
+        originalName: String,
+        fileSize: Int,
+        mimeType: String = "image/jpeg",
+        width: Int?,
+        height: Int?,
+        takenAt: Date?
+    ) async throws -> Photo {
+        // 字段名显式 snake_case：supabase-swift 的 PostgREST 不做驼峰转换
+        var payload: [String: AnyJSON] = [
+            "id": .string(id.uuidString),
+            "couple_id": .string(coupleId.uuidString),
+            "creator_id": .string(creatorId.uuidString),
+            "object_key": .string(objectKey),
+            "original_name": .string(originalName),
+            "file_size": .integer(fileSize),
+            "mime_type": .string(mimeType),
+            // 没有 EXIF 拍摄时间就显式写 NULL（时间线排序会回退到 created_at）
+            "taken_at": takenAt.map { .string(Self.timestampFormatter.string(from: $0)) } ?? .null,
+        ]
+        if let thumbKey { payload["thumb_key"] = .string(thumbKey) }
+        if let width { payload["width"] = .integer(width) }
+        if let height { payload["height"] = .integer(height) }
+
+        let created: Photo = try await client.from("photos")
+            .insert(payload)
+            .select()
+            .single()
+            .execute()
+            .value
+        return created
+    }
+
+    /// 最近的几张（上传页底部先只用它列文件名；时间线 keyset 分页是下一单）
+    static func fetchRecentPhotos(coupleId: UUID, limit: Int = 6) async throws -> [Photo] {
+        try await client.from("photos")
+            .select()
+            .eq("couple_id", value: coupleId.uuidString)
+            .eq("is_deleted", value: false)
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
+
     // MARK: - 工具
 
     /// YYYY-MM-DD（与数据库 date 字段格式一致）
@@ -224,4 +309,46 @@ enum APIClient {
         f.formatOptions = [.withInternetDateTime]
         return f
     }()
+
+    // MARK: - Edge Function 请求体 / 错误
+
+    private struct SignRequest: Encodable {
+        let items: [Item]
+
+        struct Item: Encodable {
+            let photoId: String
+            let variants: [String]
+        }
+    }
+
+    private struct EdgeErrorBody: Decodable {
+        let error: String
+    }
+
+    /// Edge Function 的错误体是 { "error": "中文提示" }，可以直接展示给用户
+    private static func throwIfEdgeFailed(_ response: URLResponse, data: Data) throws {
+        guard let http = response as? HTTPURLResponse else { throw APIClientError.badRequest }
+        guard (200..<300).contains(http.statusCode) else {
+            let message = (try? JSONDecoder().decode(EdgeErrorBody.self, from: data))?.error
+            throw APIClientError.edge(
+                status: http.statusCode,
+                message: message ?? "请求失败（HTTP \(http.statusCode)）"
+            )
+        }
+    }
+}
+
+/// 照片上传链路的客户端错误（Edge Function 的中文 error 直接透传）
+enum APIClientError: LocalizedError {
+    case emptyBatch
+    case badRequest
+    case edge(status: Int, message: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyBatch: return "没有照片需要签名"
+        case .badRequest: return "请求无法构造（配置或登录态异常）"
+        case .edge(_, let message): return message
+        }
+    }
 }

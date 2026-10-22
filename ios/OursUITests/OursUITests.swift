@@ -8,7 +8,7 @@ import XCTest
 /// - T3 用 `-UITEST_FAKE_SESSION`（App 里 #if DEBUG 的后门）直接进「已绑定」状态，不碰云端
 ///
 /// 元素形态备注（iPhone Duo / iOS 27.1 实测）：SwiftUI `TabView` 不是 `app.tabBars`，
-/// 4 个 Tab 暴露成 `Toolbar` 里的普通 Button，label 就是「主页 / 纪念日 / 心愿单 / 我们」，
+/// 5 个 Tab 暴露成 `Toolbar` 里的普通 Button，label 就是「主页 / 纪念日 / 心愿单 / 我们 / 照片」，
 /// 所以统一用 `app.buttons[label]` 查（`app.buttons` 会匹配任意容器下的按钮）。
 final class OursUITests: XCTestCase {
 
@@ -73,13 +73,13 @@ final class OursUITests: XCTestCase {
         ]
         app.launch()
 
-        let tabLabels = ["主页", "纪念日", "心愿单", "我们"]
+        let tabLabels = ["主页", "纪念日", "心愿单", "我们", "照片"]
         XCTAssertTrue(app.buttons["主页"].waitForExistence(timeout: 30), "主界面没出来（DEBUG 后门没生效？）")
         for label in tabLabels {
             XCTAssertTrue(app.buttons[label].exists, "缺少 Tab：\(label)")
         }
         // 主页此时没有别的按钮，正好用它数 Tab 数量
-        XCTAssertEqual(app.buttons.count, tabLabels.count, "Tab 数量不是 4")
+        XCTAssertEqual(app.buttons.count, tabLabels.count, "Tab 数量不是 \(tabLabels.count)")
 
         // 逐个切过去，每个 Tab 用「选中态 + 该页特有内容」双双确认
         tapTab("主页", in: app)
@@ -100,6 +100,11 @@ final class OursUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["从 2023年5月20日 开始"].exists, "后门给的假 startedDate 没生效")
         XCTAssertFalse(app.staticTexts["还没有和另一半绑定，绑定后这里会显示两个人的名字"].exists,
                        "后门没进入已绑定状态")
+
+        tapTab("照片", in: app)
+        XCTAssertTrue(app.navigationBars["照片"].waitForExistence(timeout: 10), "没切到照片页")
+        XCTAssertTrue(app.buttons["photos.picker"].exists, "照片页缺选图入口")
+        XCTAssertTrue(app.staticTexts["最近上传"].exists, "照片页缺「最近上传」区块")
 
         // 切回主页，确认来回切不崩
         tapTab("主页", in: app)

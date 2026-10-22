@@ -88,3 +88,57 @@ struct WishlistItem: Codable, Identifiable, Hashable {
         case updatedAt = "updated_at"
     }
 }
+
+/// photos 表一行（阶段 4）。object_key / thumb_key 是 OSS 对象键：不含 bucket、域名与签名参数
+struct Photo: Codable, Identifiable, Hashable {
+    let id: UUID
+    let coupleId: UUID
+    let creatorId: UUID
+    let objectKey: String       // DB 列名：object_key（标准图）
+    let thumbKey: String?       // DB 列名：thumb_key（缩略图）
+    let originalKey: String?    // DB 列名：original_key（「保留原图」才有）
+    let originalName: String    // DB 列名：original_name
+    let fileSize: Int           // DB 列名：file_size（标准图字节数）
+    let mimeType: String        // DB 列名：mime_type
+    let width: Int?
+    let height: Int?
+    let takenAt: Date?          // DB 列名：taken_at（EXIF 拍摄时间）
+    let createdAt: Date?        // DB 列名：created_at
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case coupleId = "couple_id"
+        case creatorId = "creator_id"
+        case objectKey = "object_key"
+        case thumbKey = "thumb_key"
+        case originalKey = "original_key"
+        case originalName = "original_name"
+        case fileSize = "file_size"
+        case mimeType = "mime_type"
+        case width
+        case height
+        case takenAt = "taken_at"
+        case createdAt = "created_at"
+    }
+}
+
+/// `oss-sign` 的响应：一次一批的预签名 URL（契约见 supabase/API.md「照片上传（阶段 4）」）
+struct PhotoSignBatch: Decodable {
+    let coupleId: UUID
+    let expiresIn: Int
+    let items: [Item]
+
+    struct Item: Decodable {
+        let photoId: UUID
+        /// variant → 预签名 PUT URL（"standard" / "thumb" / "original"）
+        let putUrls: [String: String]
+        let getUrl: String
+
+        /// 由预签名 URL 反推 OSS 对象键：path 才是键，query 是签名参数
+        func objectKey(for variant: String) -> String? {
+            guard let value = putUrls[variant], let url = URL(string: value) else { return nil }
+            let path = url.path
+            return path.hasPrefix("/") ? String(path.dropFirst()) : path
+        }
+    }
+}

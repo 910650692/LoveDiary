@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 主界面四个 Tab：主页 / 重要日期 / 心愿单 / 我们
+/// 主界面五个 Tab：主页 / 重要日期 / 心愿单 / 我们 / 照片
 struct MainTabView: View {
     /// 选中态提到 PushRouter：通知点击跳到哪个 Tab 由它决定
     @StateObject private var router = PushRouter.shared
@@ -30,6 +30,12 @@ struct MainTabView: View {
                     Label("我们", systemImage: "person.2.fill")
                 }
                 .tag(MainTab.me)
+
+            PhotosView()
+                .tabItem {
+                    Label("照片", systemImage: "photo.on.rectangle")
+                }
+                .tag(MainTab.photos)
         }
         .tint(Color.oursPrimary)
         // 进主界面才申请推送权限（只弹一次，见 PushRouter.requestPermissionIfNeeded）
