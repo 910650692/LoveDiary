@@ -36,7 +36,9 @@
 - 主页倒计时改读 `anniversaries`（`3e61ee0`）：按年复现取最近一条、今天显示「就是今天」、空/失败回退恋爱周年、闰日归 2/28
 - 新增「我们」页 + 登出入口（`26ea455`）：两人昵称、在一起天数、二次确认登出（此前 App 内没有任何登出 UI）
 - 阶段 4 照片已开工：设计定稿 + **建表迁移已推送并核验**（`20261021000000_stage4_photos`：4 张表全开 RLS，共 15 条策略，索引齐全，台账已记录）+ iOS 图片管线（压缩/缩略图/EXIF/方向，纯 CoreGraphics，可在命令行实测）
-- 剩余：**阶段 2 的真实数据验收**（纪念日/心愿单 CRUD 还没在真库上点过）、**「修改在一起日期」入口**（当前只能改库）、**OSS 开通后**写 `oss-sign` + 上传/时间线、推送真机验证（$99 账号 + APNs 证书）、上架准备（Bundle ID 拍板、正式视觉替换）
+- ✅ OSS 接入完成（2026-10-21）：bucket `ours-photos-jw`（上海，私有）+ RAM 最小权限；`oss-sign` Edge Function 已部署并**真链路验证**（临时用户 JWT → 200 → 预签名 URL 直传 PUT 200 → GET 200 内容一致）
+- ✅ iOS 照片上传链路完成（`91cdead`）：第 5 个 Tab + PhotoPipeline → 批量签名（一批一次）→ 并发 2 直传 → 插 `photos` 行；Bundle ID 定 `app.ours.diary`（`35556a5`）
+- 剩余：**时间线网格**（缩略图 + 分页 + 看原图，上传页目前只有最简列表）、**真机验证真实上传**（需真机 + 真照片）、**阶段 2 真实数据验收**（纪念日/心愿单 CRUD 未在真库点过）、**「修改在一起日期」入口**（当前只能改库）、**推送真机验证（需 $99 账号 + APNs .p8）**、正式视觉替换
 
 ## 本机环境坑（已踩过）
 - Xcode 装完**必须打开一次**装附加组件，否则 `xcodebuild` 崩在 `IDESimulatorFoundation` 插件加载（缺 `/Library/Developer/PrivateFrameworks/CoreSimulator.framework`）
