@@ -9,6 +9,10 @@ import UIKit
 /// - 原图点了才拉（走 PhotoURLStore 的签名缓存，过期会重签一次）
 struct PhotoDetailView: View {
     let photo: Photo
+    /// 删成功后通知上一层把这个 id 从网格里摘掉（详情页自己 dismiss 回时间线）
+    var onDeleted: ((UUID) -> Void)? = nil
+
+    @Environment(\.dismiss) private var dismiss
 
     @State private var standard: UIImage?
     @State private var standardFailed = false
@@ -16,12 +20,22 @@ struct PhotoDetailView: View {
     @State private var isLoadingOriginal = false
     @State private var originalMessage: String?
 
+    @State private var isConfirmingDelete = false
+    @State private var isDeleting = false
+    @State private var deleteMessage: String?
+
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 picture
                 if photo.originalKey != nil {
                     originalSection
+                }
+                if let deleteMessage {
+                    Text(deleteMessage)
+                        .font(.footnote)
+                        .foregroundStyle(Color.oursPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 infoCard
                 Spacer(minLength: 8)
@@ -31,6 +45,32 @@ struct PhotoDetailView: View {
         .background(Color.oursBackground.opacity(0.3))
         .navigationTitle("照片详情")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .destructive) {
+                    isConfirmingDelete = true
+                } label: {
+                    if isDeleting {
+                        ProgressView().tint(Color.oursPrimary)
+                    } else {
+                        Image(systemName: "trash")
+                    }
+                }
+                .tint(Color.oursPrimary)
+                .disabled(isDeleting)
+                .accessibilityIdentifier("photoDetail.delete")
+                .accessibilityLabel("删除照片")
+            }
+        }
+        // 删除不可撤销：先把后果说清楚，再让用户点
+        .confirmationDialog("删除这张照片？", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+            Button("删除", role: .destructive) {
+                Task { await delete() }
+            }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("照片会从你们的相册里消失，无法恢复")
+        }
         .task { await loadStandard() }
     }
 
@@ -173,6 +213,29 @@ struct PhotoDetailView: View {
         original = loaded
         if loaded == nil {
             originalMessage = "原图没拉下来（可能是网络断了），再点一次试试"
+        }
+    }
+
+    /// 删除编排：软删库行 → 删 OSS 对象（顺序在 APIClient.deletePhoto 里，注释写死了理由）→ 回时间线。
+    ///
+    /// OSS 那一步失败不会抛错（只记日志），所以这里 catch 到的只可能是「库行没删成」，
+    /// 那种情况什么都没变，让用户重试是安全的。
+    @MainActor
+    private func delete() async {
+        guard !isDeleting else { return }
+        isDeleting = true
+        deleteMessage = nil
+        defer { isDeleting = false }
+
+        do {
+            try await APIClient.deletePhoto(photo)
+            PhotoURLStore.shared.forget(photo)
+            // 先退出详情、再让上层摘掉网格那一格：反过来的话，被推走的页面还在而 ForEach 已少一行，
+            // SwiftUI 会自己 pop，容易和这次 dismiss 打架
+            dismiss()
+            onDeleted?(photo.id)
+        } catch {
+            deleteMessage = "删除没成功（\(error.localizedDescription)），再试一次"
         }
     }
 

@@ -273,6 +273,80 @@ enum APIClient {
         return PhotoReadSignatures(expiresIn: expiresIn, urls: urls)
     }
 
+    // MARK: - 照片删除（顺序不能反：先软删库行，再删 OSS 对象）
+
+    /// 删一张照片：① **先软删库行** → ② 再删 OSS 上的标准图 / 缩略图 / 原图。
+    ///
+    /// **为什么是这个顺序**：反过来（先删对象后删库行）一旦库行没删成功，
+    /// 就留下「有记录但文件没了」的坏图——用户点开只有破图，还会以为 app 坏了。
+    /// 按现在的顺序，最坏情况只是留下孤儿文件：只影响存储成本，用户完全无感；
+    /// 孤儿文件由运维脚本清理，不属于客户端职责。
+    ///
+    /// OSS 删除失败**不回滚库行、也不向上抛错**：库行已软删，照片在用户视角已经消失，
+    /// 这时弹错只会把人拉回「照片还在」的困惑里。失败只静默记一条日志。
+    static func deletePhoto(_ photo: Photo) async throws {
+        // ① 软删库行：时间线查询本就带 is_deleted=eq.false，下一次刷新就不会再出现
+        try await softDeletePhoto(id: photo.id)
+        // ② 删对象：有哪个删哪个，失败只记日志（绝不回滚 ①）
+        await deletePhotoObjects(photo)
+    }
+
+    /// 软删一行 photos → PATCH photos?id=eq.<id> {is_deleted:true}（API.md 明文约定）
+    static func softDeletePhoto(id: UUID) async throws {
+        let payload: [String: AnyJSON] = ["is_deleted": .bool(true)]
+        try await client.from("photos")
+            .update(payload, returning: .minimal)
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+
+    /// 取 DELETE 签名并逐个删对象。
+    ///
+    /// 整段是「尽力而为」：签名失败、网络失败、OSS 返回非 204 都只记日志，
+    /// 因为库行已经软删，用户视角照片早就没了——这里失败只意味着多一个孤儿文件。
+    private static func deletePhotoObjects(_ photo: Photo) async {
+        // 只点名库里真实存在的键：缩略图/原图没有就没有，
+        // 不能像读取那样回退到标准图（那会把同一个对象删两遍）
+        var keys: [String: String] = ["standard": photo.objectKey]
+        if let thumbKey = photo.thumbKey { keys["thumb"] = thumbKey }
+        if let originalKey = photo.originalKey { keys["original"] = originalKey }
+
+        let signed: PhotoSignBatch
+        do {
+            signed = try await postSign(SignRequest(items: [
+                SignRequest.Item(
+                    photoId: photo.id.uuidString,
+                    variants: keys.keys.sorted(),
+                    keys: keys,
+                    delete: true
+                )
+            ]))
+        } catch {
+            NSLog("[ours] 删除签名失败，OSS 对象留作孤儿待运维清理 photo=%@ err=%@",
+                  photo.id.uuidString, String(describing: error))
+            return
+        }
+
+        guard let item = signed.items.first else { return }
+        for variant in keys.keys {
+            guard let url = item.deleteURL(for: variant) else { continue }
+            var request = URLRequest(url: url)
+            request.httpMethod = "DELETE"
+            do {
+                let (_, response) = try await URLSession.shared.data(for: request)
+                let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+                // 204 = 删掉了；404 = 本来就不在（上一轮删过），都算达成目的
+                if status != 204 && status != 404 {
+                    NSLog("[ours] 删除 OSS 对象返回 %d，留作孤儿待运维清理 key=%@",
+                          status, keys[variant] ?? variant)
+                }
+            } catch {
+                NSLog("[ours] 删除 OSS 对象失败，留作孤儿待运维清理 key=%@ err=%@",
+                      keys[variant] ?? variant, String(describing: error))
+            }
+        }
+    }
+
     /// 打一次 oss-sign（上传与读取共用：同一个端点、同一套鉴权）
     private static func postSign(_ body: SignRequest) async throws -> PhotoSignBatch {
         guard let url = URL(string: AppConfig.supabaseURL + "/functions/v1/oss-sign") else {
@@ -436,6 +510,8 @@ enum APIClient {
             let variants: [String]
             /// 读已存在的对象时给库里的真实键；上传/新照片传 nil（服务端按当天拼）
             let keys: [String: String]?
+            /// true = 额外要 deleteUrls（删除签名）；nil 时编码器会直接省略这个字段，老契约不变
+            var delete: Bool? = nil
         }
     }
 

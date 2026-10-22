@@ -135,6 +135,8 @@ struct PhotoSignBatch: Decodable {
         /// variant → 预签名 GET URL（读照片用；键来自请求里的 `keys`，见 API.md）
         let getUrls: [String: String]?
         let getUrl: String
+        /// variant → 预签名 DELETE URL：只有请求带 `delete: true` 时服务端才给（见 API.md「照片删除」）
+        let deleteUrls: [String: String]?
 
         /// 由预签名 URL 反推 OSS 对象键：path 才是键，query 是签名参数
         func objectKey(for variant: String) -> String? {
@@ -146,6 +148,11 @@ struct PhotoSignBatch: Decodable {
         /// 某个变体的预签名 GET URL（服务端只按请求的 variants 给，没给就是 nil）
         func getURL(for variant: String) -> URL? {
             getUrls?[variant].flatMap(URL.init(string:))
+        }
+
+        /// 某个变体的预签名 DELETE URL（只有 `delete: true` 的请求才有）
+        func deleteURL(for variant: String) -> URL? {
+            deleteUrls?[variant].flatMap(URL.init(string:))
         }
     }
 }

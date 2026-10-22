@@ -5,13 +5,16 @@
 // 安全要点：
 // 1. AccessKey 只放在 Edge Function secrets，永不下发客户端
 // 2. 对象键前缀强制钉死为 couples/<我的 couple_id>/...，客户端无法为别人的前缀要签名
-// 3. 只签 PUT/GET，不给删除、列举权限
+// 3. 只签 PUT/GET/DELETE，不给列举（ListBuckets/ListObjects）与跨前缀权限
 //
 // 一次响应里同时给两类签名：
 // - putUrls：**上传**用。键由服务端按「今天」拼，客户端插库前拿它直传
 // - getUrls：**读取**用。键优先用请求里的 keys（就是 photos 行的 object_key/thumb_key/original_key），
 //   没给才回落到同一套「今天」拼法。时间线读上个月甚至前年的照片必须靠 keys：
 //   只按 today 拼路径会指向一个根本不存在的对象。
+// - deleteUrls：**删除**用。只有 items[].delete = true 时出现，且必须带 keys
+//   （删的对象是库里真实存在的键，不能让服务端按「今天」拼一个不存在的路径）。
+//   删除顺序与理由见 supabase/API.md「照片删除」。
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import OSS from "npm:ali-oss@6";
@@ -35,7 +38,8 @@ const ALL_VARIANTS: Variant[] = ["standard", "thumb", "original"];
 interface SignItem {
   photoId: string;
   variants?: Variant[];                // 默认 ["standard", "thumb"]（与上传契约一致）
-  keys?: Partial<Record<Variant, string>>; // 读已存在对象时给真实键；不给则按今天拼
+  keys?: Partial<Record<Variant, string>>; // 读/删已存在对象时给真实键；读不给则按今天拼
+  delete?: boolean;                    // true = 额外签 deleteUrls（必须带 keys）
 }
 
 // 每张照片最多三个对象，命名见 PHOTOS_DESIGN §9
@@ -108,11 +112,17 @@ Deno.serve(async (req) => {
         return json({ error: "variants 只能是 standard / thumb / original" }, 400);
       }
     }
+    let providedKeys = 0;
     for (const v of ALL_VARIANTS) {
       const key = it.keys?.[v];
+      if (key !== undefined) providedKeys++;
       if (key !== undefined && !isOwnKey(key, coupleId)) {
         return json({ error: "keys 不合法：对象键必须在你自己的 couple 目录下" }, 400);
       }
+    }
+    // 删除必须点名要删的对象：没有 key 就只能按「今天」猜路径，猜错会静默留下孤儿文件
+    if (it.delete === true && providedKeys === 0) {
+      return json({ error: "删除签名必须带 keys（要删哪个对象就点名哪个）" }, 400);
     }
   }
 
@@ -138,12 +148,28 @@ Deno.serve(async (req) => {
       getUrls[v] = client.signatureUrl(it.keys?.[v] ?? freshKey, { expires: expiresIn, method: "GET" });
     }
     const standardReadKey = it.keys?.standard ?? objectKey(coupleId, it.photoId, "standard", now);
+
+    // 删除签名：只签 keys 里**点名的**对象，不给「按今天猜路径」的兜底，
+    // 因为签错路径不会报错，只会静默留下没人清理的孤儿文件。
+    // 也没有任何批量/前缀能力：一条 URL 只对应一个确切的对象键。
+    let deleteUrls: Record<string, string> | undefined;
+    if (it.delete === true) {
+      deleteUrls = {};
+      for (const v of ALL_VARIANTS) {
+        const key = it.keys?.[v];
+        if (key === undefined) continue;
+        deleteUrls[v] = client.signatureUrl(key, { expires: expiresIn, method: "DELETE" });
+      }
+    }
+
     return {
       photoId: it.photoId,
       putUrls,
       getUrls,
       // 老的单一 getUrl 保留：已上线的客户端在用，别让它们 404
       getUrl: client.signatureUrl(standardReadKey, { expires: expiresIn, method: "GET" }),
+      // 只在 delete:true 时出现，老客户端不读这个字段，契约不变
+      ...(deleteUrls ? { deleteUrls } : {}),
     };
   });
 

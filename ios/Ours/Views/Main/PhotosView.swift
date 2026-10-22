@@ -119,7 +119,10 @@ struct PhotosView: View {
         LazyVGrid(columns: columns, spacing: 4) {
             ForEach(photos) { photo in
                 NavigationLink {
-                    PhotoDetailView(photo: photo)
+                    // 详情页删成功后把这一格从网格摘掉（服务端已 is_deleted，重拉也不会再出现）
+                    PhotoDetailView(photo: photo) { deletedId in
+                        photos.removeAll { $0.id == deletedId }
+                    }
                 } label: {
                     PhotoThumbnail(photo: photo)
                 }
@@ -390,6 +393,18 @@ final class PhotoURLStore {
 
         signatures[key] = (url, Date().addingTimeInterval(TimeInterval(signed.expiresIn) - Self.expiryMargin))
         return url
+    }
+
+    /// 删完把这张照片的签名与已解码图片从内存里清掉：
+    /// 不清的话，删除后重新进网格还能从缓存里看到一张「已经不存在」的照片
+    func forget(_ photo: Photo) {
+        for variant in ["standard", "thumb", "original"] {
+            guard let key = photo.objectKey(for: variant) else { continue }
+            signatures[key] = nil
+            images.removeObject(forKey: key as NSString)
+            inFlight[key]?.cancel()
+            inFlight[key] = nil
+        }
     }
 
     private func signature(for key: String) -> URL? {

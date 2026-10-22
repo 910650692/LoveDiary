@@ -191,7 +191,8 @@ AccessKey 只存 Supabase Edge Function secrets，**永不下发客户端**。iO
   服务端按 `^couples/<我的 couple_id>/<yyyy>/<MM>/<uuid>(_t|_o)?\.jpg$` 校验，别人的前缀或 `..` 穿越一律 `400`
 - **读老照片必须带 `keys`**：服务端只会按「当天」拼 yyyy/MM，不给真实键就会签出一个不存在的对象（`404`）
 - URL 有效期 **900 秒**，过期需重新要一次
-- 只签 PUT / GET，**不签删除与列举**
+- 只签 PUT / GET / DELETE，**不签列举**（ListBuckets / ListObjects 一律没有）；
+  删除签名只对**点名的单个对象键**有效，不存在批量或前缀删除能力（见下节）
 
 错误：`401` 未登录 / `403` 还没绑定另一半 / `400` 参数不合法（中文提示可直接展示）
 
@@ -213,7 +214,58 @@ AccessKey 只存 Supabase Edge Function secrets，**永不下发客户端**。iO
 5. **过期兜底**：缓存的签名 URL 超过 900 秒会 403，按同一对象键**重签一次再重试**，
    仍失败才显示占位，不要直接把破图糊到用户脸上
 
-### 已验证
+## 照片删除（阶段 4，已部署验证）
+
+### 请求（同一个端点，加 `delete: true`）
+```json
+{
+  "items": [{
+    "photoId": "8f3a…-uuid",
+    "delete": true,
+    "keys": {
+      "standard": "couples/34ce59e5-…/2026/10/8f3a….jpg",
+      "thumb":    "couples/34ce59e5-…/2026/10/8f3a…_t.jpg",
+      "original": "couples/34ce59e5-…/2026/10/8f3a…_o.jpg"
+    }
+  }]
+}
+```
+
+### 响应（只多一个字段，`putUrls`/`getUrls`/`getUrl` 照旧都在）
+```json
+{ "items": [{ "photoId": "8f3a…", "deleteUrls": { "standard": "https://…?x-oss-…", "thumb": "https://…?x-oss-…" } }] }
+```
+
+字段语义：
+- `deleteUrls` **只在 `delete: true` 时出现**；不带 `delete` 的老请求响应里没有它，上传与时间线契约零变化
+- 键与 `keys` 里给了的几个变体一一对应：`keys` 只有 `standard` 就只有 `deleteUrls.standard`（「有哪个删哪个」）
+- 每条 URL 是一个 `DELETE` 预签名，**只对那一个对象键有效**；没有 ListObjects、没有前缀/批量删除
+
+约束（服务端强制）：
+- `delete: true` **必须带 `keys`**，且每个键同样要过 `^couples/<我的 couple_id>/<yyyy>/<MM>/<uuid>(_t|_o)?\.jpg$`：
+  没有 key 就只能按「今天」猜路径，猜错不报错、只会留下没人清理的孤儿文件 → 直接 `400`
+- 别人的 couple 前缀、`..` 穿越、非 `.jpg` 一律 `400`；无 JWT `401`
+- 一次最多 20 项（与上传/读取同一上限）
+- 删除签名有效期同样 **900 秒**
+
+### 客户端删除顺序（**顺序不能反**）
+1. 二次确认：明确告诉用户「照片会从你们的相册里消失，无法恢复」
+2. **先软删库行**：`PATCH photos {is_deleted: true}`（`?id=eq.<id>`）→ 用户视角立刻消失，
+   时间线查询本来就带 `is_deleted=eq.false`，下一次刷新不会再出现
+3. **再删 OSS 对象**：拿 `deleteUrls` 对 `thumb_key` / `object_key` / `original_key` 逐个 `DELETE`（有哪个删哪个）
+4. 从网格里移除该项（或重拉第一页），回到时间线
+
+**为什么先删库行、后删对象**：反过来的话，对象删掉、库行没删成功，就留下一张「有记录但文件没了」的坏图，
+用户点开只能看到破图；按上面这个顺序，最坏情况只是留下孤儿文件——只影响存储成本，用户完全无感。
+孤儿文件由运维脚本清理，不属于客户端职责。
+
+**OSS 删除失败不要回滚库行，也不要弹错**：库行已经软删，用户视角照片已经消失；
+删对象失败只静默记一条日志（孤儿文件留待运维清），绝不要把用户拉回「照片还在」的状态。
+
+### 已验证（oss-sign 三条链路：上传 / 读取 / 删除）
+- **2026-10-22 删除链路**：临时用户 → 真 JWT → `oss-sign` 200（老字段不变，新增 `deleteUrls`）→
+  PUT 标准图/缩略图各 `200` → 用 `deleteUrls` 发 **DELETE 204** → 同一对象再 **GET 404**（证明确实删掉）；
+  别人 couple 前缀 / `..` 穿越 / `delete:true` 却不带 keys 全部 `400`，无 JWT `401`，临时用户/couple 已清理。
 - **2026-10-21 上传链路**：临时用户 → 真 JWT → `oss-sign` 200 → 预签名 URL 直传 **PUT 200** →
   **GET 200 内容一致** → 临时用户/couple 已清理。bucket 私有策略与 RAM 最小权限均生效。
 - **2026-10-22 读签名（getUrls）**：临时用户 → 真 JWT → `oss-sign` 200（`putUrls`/`getUrl` 老字段不变，
