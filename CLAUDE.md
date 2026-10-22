@@ -40,6 +40,8 @@
 - ✅ iOS 照片上传链路完成（`91cdead`）：第 5 个 Tab + PhotoPipeline → 批量签名（一批一次）→ 并发 2 直传 → 插 `photos` 行；Bundle ID 定 `app.ours.diary`（`35556a5`）
 - ✅ 照片时间线网格（`e0786c6`）：`oss-sign` v2 增量加 `getUrls`（读老照片需带 `keys`，服务端校验前缀）；三列缩略图墙 + keyset 三段游标分页 + 签名 URL 缓存/过期重签 + 详情页「查看原图」门控
 - ✅ 「修改在一起日期」（`20261022000000` 迁移 + iOS 入口）：couples 补 UPDATE 策略并加触发器冻结身份列（RLS 限不了列，不冻结就能顺手解绑）
+- ✅ 留存闭环三补丁（`31baece`）：`notify-photos`（一批一条 + 10 分钟节流表 `push_throttle`）、纪念日新增「还有 7 天」并把匹配改 MM-DD 按年复现（原实现下恋爱周年永不触发）、`on_wishlist_completed` 触发器推给对方（10 例反例验证）
+- ✅ 修复阻断级 bug（`24683d9`）：20261022000000 的 `freeze_couple_identity` 触发器无条件回滚 `join_couple` 的 `user_b_id` 写入 → 第二个用户永远绑不上且函数假成功。改用**列级授权**（`grant update (started_date)`）替代触发器
 - 剩余：**真机验证真实上传**（需真机 + 真照片，唯一还只是推断的环节）、**阶段 2 真实数据验收**（纪念日/心愿单 CRUD 未在真库点过）、**推送真机验证（需 $99 账号 + APNs .p8）**、正式视觉替换
 
 ## 本机环境坑（已踩过）
@@ -49,6 +51,8 @@
   - **必须带 `-scheme Ours`**：不带时 xcodebuild 会忽略 destination（`Ignoring provided run destination because no scheme was passed`），SwiftPM 包图降级，报 3 个第三方包 unresolved module（xctest-dynamic-overlay / swift-clocks）——不是代码问题
 - UI 测试：`xcodebuild test -project Ours.xcodeproj -scheme Ours -destination 'platform=iOS Simulator,name=iPhone Duo'`（6 条用例：登录页/注册页/四 Tab/我们页/登出/照片自测页）
 - OSS 运维：RAM 子账号权限 = `PutObject`/`GetObject`/`DeleteObject`（限 `ours-photos-jw/couples/*`）+ `ListObjects`（限 bucket 本身）。**App 仍不能删**——`oss-sign` 只签 PUT/GET；将来做「删除照片」要新增 DELETE 签名分支，并配「先删库行再删对象」，否则孤儿文件只涨不降
+- **改 schema 后必须跑 `supabase/scripts/e2e.mjs`**（口令：`SUPABASE_URL`/`ANON_KEY`/`SERVICE_ROLE_KEY`，KEY 可从 Management API `api-keys?reveal=true` 取）。理由：`join_couple` 这条链路没有任何单测，靠触发器回滚过整个绑定流程而 20 项 e2e 里只有 8 项能抓到
+- **限制「只能改某几列」请用列级授权**（`revoke update` + `grant update (col)`），不要用 BEFORE UPDATE 触发器：触发器会和 security definer 函数（如 `join_couple`）打架，且失败是静默的
 - **GitHub 推送走 SSH 443**：本机代理会掐断 22 端口上的大流量（`ssh -T` 能过但 `git push` 断）。
   `~/.ssh/config` 已把 `github.com` 指向 `ssh.github.com:443` + 专用密钥 `id_ed25519_github`；
   公司用的 `id_ed25519`（bastion / 内网）不要与个人 GitHub 混用
