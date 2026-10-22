@@ -126,3 +126,53 @@ SUPABASE_ANON_KEY=<anon key>   # supabase projects api-keys 可查
 
 - **阶段 4 照片**：阿里云 OSS，Edge Function 签发 STS 临时凭证，`avatar_url`/相册存 OSS key
 - 对应表（albums/photos/tags/photo_tag）旧 Java 后端 `backend/database_setup.sql` 有设计，届时参考改编
+
+## 照片上传（阶段 4，已部署验证）
+
+### 凭据模型
+AccessKey 只存 Supabase Edge Function secrets，**永不下发客户端**。iOS 拿"预签名 URL"直传 OSS，
+文件二进制**不经过 Supabase**。
+
+### `POST /functions/v1/oss-sign`
+请求头：`Authorization: Bearer <用户 JWT>`（Edge Function 默认 verify_jwt）
+
+```json
+{ "items": [ { "photoId": "8f3a…-uuid", "variants": ["standard", "thumb"] } ] }
+```
+
+响应：
+```json
+{
+  "coupleId": "34ce59e5-…",
+  "expiresIn": 900,
+  "items": [{
+    "photoId": "8f3a…",
+    "putUrls": {
+      "standard": "https://ours-photos-jw.oss-cn-shanghai.aliyuncs.com/couples/34ce59e5-…/2026/10/8f3a….jpg?x-oss-…",
+      "thumb":    "https://…/8f3a…_t.jpg?x-oss-…"
+    },
+    "getUrl": "https://…/8f3a….jpg?x-oss-…"
+  }]
+}
+```
+
+约束（服务端强制，客户端别绕）：
+- 一次最多 **20 张**（跨境 RTT 成本）
+- `photoId` 必须是 uuid；对象键由服务端拼，规则：
+  `couples/<我的 couple_id>/<yyyy>/<MM>/<photo_id>{,_t,_o}.jpg`
+  （`_t` 缩略图、`_o` 原图；见 `PHOTOS_DESIGN.md` §5 三份对象模型）
+- URL 有效期 **900 秒**，过期需重新要一次
+- 只签 PUT / GET，**不签删除与列举**
+
+错误：`401` 未登录 / `403` 还没绑定另一半 / `400` 参数不合法（中文提示可直接展示）
+
+### 客户端上传顺序
+1. 本地跑 `PhotoPipeline.prepare`（压缩 2048 / 缩略图 400 / 读 EXIF 时间 / 剥离 GPS）
+2. 先生成 `photoId`（客户端 uuid），调 `oss-sign` 拿 URL
+3. `URLSession` PUT 标准图与缩略图（直传 OSS）
+4. 插 `photos` 行（`object_key` / `thumb_key` / `size` / `width` / `height` / `taken_at`），RLS 保证建在自己 couple 下
+5. 若有原图（设置里开启）再 PUT `_o.jpg` 并回填 `original_key`
+
+### 已验证（2026-10-21）
+真机链路已跑通：临时用户 → 真 JWT → `oss-sign` 200 → 预签名 URL 直传 **PUT 200** →
+**GET 200 内容一致** → 临时用户/couple 已清理。bucket 私有策略与 RAM 最小权限均生效。
