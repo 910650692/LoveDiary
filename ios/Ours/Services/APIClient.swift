@@ -409,6 +409,29 @@ enum APIClient {
         return created
     }
 
+    /// 一批照片传完，告诉服务端「这批成功了 N 张」→ notify-photos 推给另一半。
+    ///
+    /// **一批一次**：count 是本批成功张数，不是逐张调用（逐张推 = 选 10 张就轰炸对方 10 条）。
+    /// 服务端还会按 couple 再挡一层 10 分钟节流，客户端不必自己算时间。
+    /// 调用方要吞掉错误：照片已经进库了，回响丢了不能反过来把上传结果变成失败。
+    static func notifyPhotos(count: Int) async throws {
+        guard let url = URL(string: AppConfig.supabaseURL + "/functions/v1/notify-photos") else {
+            throw APIClientError.badRequest
+        }
+
+        // 与 oss-sign 一样：Edge Function 默认 verify_jwt，必须带用户 access_token + apikey
+        let session = try await client.auth.session
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue(AppConfig.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["count": count])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try Self.throwIfEdgeFailed(response, data: data)
+    }
+
     /// 最近的几张（上传完立刻回显用）
     static func fetchRecentPhotos(coupleId: UUID, limit: Int = 6) async throws -> [Photo] {
         try await client.from("photos")

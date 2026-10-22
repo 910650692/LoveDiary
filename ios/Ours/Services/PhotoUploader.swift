@@ -166,8 +166,17 @@ final class PhotoUploader: ObservableObject {
         finish(results)
     }
 
+    /// 整批收尾：唯一的「批次结束」出口，所以通知也放在这里——一批只可能走一次。
     private func finish(_ results: [PhotoUploadResult]) {
         summary = PhotoUploadSummary(results: results)
+
+        // 一批一条：按本批成功张数通知另一半（不是逐张，进不了下面的逐张链路）。
+        // 0 张成功就不推：没东西可看，推了只是噪音。失败静默——照片已经在库里了。
+        let succeeded = results.filter(\.isSuccess).count
+        guard succeeded > 0 else { return }
+        Task {
+            try? await APIClient.notifyPhotos(count: succeeded)
+        }
     }
 
     // MARK: - 单张（不碰 UI 状态，跑在后台）

@@ -108,11 +108,24 @@ SUPABASE_ANON_KEY=<anon key>   # supabase projects api-keys 可查
 ## 推送（阶段 3，服务端已就绪）
 
 - **服务商**：OneSignal（免费档）。密钥存于 Supabase secrets：`ONESIGNAL_APP_ID` / `ONESIGNAL_API_KEY` / `OUR_INTERNAL_SECRET`（内部函数鉴权，与迁移文件保持一致）
-- **Edge Function**（`supabase/functions/`，已部署，verify_jwt=false，靠 `OUR_INTERNAL_SECRET` 鉴权）：
-  - `send-push` — 通用推送入口：`POST /functions/v1/send-push` `{userIds:[uuid], title, body, data?}`，内部/触发器调用
-  - `anniversary-reminder` — 纪念日提醒：pg_cron 每天 23:00 UTC（北京时间 07:00）触发，查今天/明天的 anniversaries（enable_notification=true）+ 恋爱周年，给双方发推送
-- **数据库侧**（迁移 `20260809223000_stage3_push.sql`）：pg_cron 定时任务 + `wishlist_items` 新增时触发器调 send-push 通知另一半
-- **iOS 端待做**：OneSignal SDK 集成，注册时 `external_user_id = Supabase 用户 UUID`（服务端据此寻址）；APNs 证书需 Apple 开发者账号（$99）后配置
+- **Edge Function**（`supabase/functions/`）：
+  - `send-push` — 通用推送入口：`POST /functions/v1/send-push` `{userIds:[uuid], title, body, data?}`，verify_jwt=false，靠 `OUR_INTERNAL_SECRET` 鉴权，仅供内部/触发器调用
+  - `anniversary-reminder` — 纪念日提醒：pg_cron 每天 23:00 UTC（北京时间 07:00）触发，查**今天 / 明天 / 还有 7 天**的 anniversaries（enable_notification=true）+ 恋爱周年，给双方发推送（同一纪念日一次运行只命中一个窗口）
+  - `notify-photos` — 照片批次推送：`POST /functions/v1/notify-photos` `{count}`，**用户 JWT**（verify_jwt），推给另一半。契约见下文「照片上传推送」
+- **数据库侧**：
+  - `20260809223000_stage3_push.sql`：pg_cron 定时任务 + `wishlist_items` 新增时触发器调 send-push 通知另一半
+  - `20261023000000_retention_pushes.sql`：`wishlist_items` 状态 PENDING → COMPLETED 时触发器（只推给对方，不推完成者）+ `push_throttle` 节流表（只有 service_role 能读写）
+- **iOS 端**：OneSignal SDK 集成，注册时 `external_user_id = Supabase 用户 UUID`（服务端据此寻址）；APNs 证书需 Apple 开发者账号（$99）后配置
+
+### 推送触发点总表（谁、在什么时刻、推给谁）
+| 触发 | 位置 | 收件人 | data.type |
+|---|---|---|---|
+| 对方新增心愿 | 触发器 `on_wishlist_insert` | 另一半 | `wishlist` |
+| 对方完成心愿（PENDING → COMPLETED 且未软删） | 触发器 `on_wishlist_completed` | 另一半（**不是**完成者） | `wishlist` |
+| 一批照片上传完成（≥1 张成功） | 函数 `notify-photos`（客户端整批调一次） | 另一半（**不是**上传者） | `photos` |
+| 纪念日今天 / 明天 / 还有 7 天 | 函数 `anniversary-reminder`（pg_cron） | 双方 | `anniversary` / `couple_anniversary` |
+
+改标题、改备注、软删除照片/心愿、重复写一次 COMPLETED 都**不会**产生推送：触发器条件写在 `WHEN` 里。
 
 ### 客户端接收约定
 推送 `data` 字段携带跳转信息，app 收到后按 `type` 导航：
@@ -121,6 +134,37 @@ SUPABASE_ANON_KEY=<anon key>   # supabase projects api-keys 可查
 | `anniversary` | `anniversary_id` | 重要日期详情 |
 | `couple_anniversary` | `couple_id` | 主页 |
 | `wishlist` | `wishlist_id` | 心愿单 |
+| `photos` | 无 | 照片 Tab |
+
+### `POST /functions/v1/notify-photos`（照片批次推送）
+
+请求头：`Authorization: Bearer <用户 JWT>`（verify_jwt，与 `oss-sign` 同一套认人方式）
+
+请求：
+```json
+{ "count": 3 }
+```
+
+- `count`：**本批成功张数**（不是单张回调次数），必须是 1..20 的整数，越界返回 400
+- 一批只调一次：`PhotoUploader` 在整批收尾且 ≥1 张成功时调用；失败静默忽略，不影响上传结果
+
+响应：
+```json
+{ "sent": true, "coupleId": "…", "partner": "…", "onesignalStatus": 200, "onesignal": { "id": "…", "recipients": 1 } }
+```
+
+| 状态 | 含义 |
+|---|---|
+| 200 `sent: true` | 已推给另一半 |
+| 200 `sent: false, reason: "throttled"` | 同一 couple 10 分钟内已推过照片，本次跳过（正常节流，不是错误） |
+| 200 `sent: false, reason: "no_partner"` | 关系里找不到另一半，静默跳过 |
+| 400 | `count` 不合法 / 请求体不是 JSON |
+| 401 | 缺少或失效的用户 JWT |
+| 403 | 还没绑定另一半 |
+| 502 | OneSignal 没接单（此时**不**记节流，下一批还能推） |
+
+推送内容：标题「新照片」，正文「TA 传了 3 张新照片 📷」，`data = {"type":"photos"}`（客户端点击切到照片 Tab）。
+服务端节流状态存在 `push_throttle` 表（`couple_id + kind='photos'` 一行，开 RLS 且无策略 = 客户端碰不到）。
 
 ## 尚未实现（后续阶段）
 
