@@ -50,6 +50,24 @@ enum APIClient {
         return coupleId
     }
 
+    // MARK: - 关系（写）
+
+    /// 修改在一起日期 → PATCH couples?id=eq.<id>，返回更新后的行。
+    /// 服务端有触发器冻结 id / user_a_id / user_b_id / created_at，因此这里只能改 started_date
+    static func updateCoupleStartedDate(coupleId: UUID, date: Date) async throws -> Couple {
+        let payload: [String: AnyJSON] = [
+            "started_date": .string(Self.dateOnlyFormatter.string(from: date)),
+        ]
+        let updated: Couple = try await client.from("couples")
+            .update(payload)
+            .eq("id", value: coupleId.uuidString)
+            .select()
+            .single()
+            .execute()
+            .value
+        return updated
+    }
+
     // MARK: - 数据查询
 
     /// 查我的关系（还没绑定返回 nil）

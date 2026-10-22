@@ -9,6 +9,10 @@ struct OursView: View {
     @State private var loadFailed = false
     @State private var isSigningOut = false
     @State private var showSignOutConfirm = false
+    @State private var showDateEditor = false
+    @State private var draftDate = Date()
+    @State private var isSavingDate = false
+    @State private var dateError: String?
 
     var body: some View {
         NavigationStack {
@@ -37,6 +41,7 @@ struct OursView: View {
             } message: {
                 Text("退出后这台手机需要重新登录才能进入我们的空间；回忆不会被删除。")
             }
+            .sheet(isPresented: $showDateEditor) { dateEditorSheet }
         }
     }
 
@@ -133,6 +138,14 @@ struct OursView: View {
                     Text("从 \(startedText) 开始")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    Button {
+                        draftDate = startedDateValue ?? Date()
+                        dateError = nil
+                        showDateEditor = true
+                    } label: {
+                        Text("修改").font(.footnote)
+                    }
+                    .accessibilityIdentifier("ours.editStartDate")
                 }
             } else {
                 Text("还没有记录在一起的那天")
@@ -232,6 +245,60 @@ struct OursView: View {
         .accessibilityIdentifier("ours.debugPhotos")
     }
 #endif
+
+    // MARK: - 修改在一起日期
+
+    /// 库里存的是 YYYY-MM-DD，转成 Date 给 DatePicker 用
+    private var startedDateValue: Date? {
+        guard let couple = app.couple else { return nil }
+        return APIClient.dateOnlyFormatter.date(from: couple.startedDate)
+    }
+
+    private var dateEditorSheet: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    DatePicker("在一起的那天", selection: $draftDate, in: ...Date(), displayedComponents: .date)
+                        .datePickerStyle(.graphical)
+                        .accessibilityIdentifier("ours.datePicker")
+                } footer: {
+                    Text("这一天会变成主页上「在一起」的起点。")
+                }
+                if let dateError {
+                    Text(dateError).font(.footnote).foregroundStyle(.red)
+                }
+            }
+            .navigationTitle("修改在一起日期")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { showDateEditor = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(isSavingDate ? "保存中…" : "保存") {
+                        Task { await saveStartedDate() }
+                    }
+                    .disabled(isSavingDate)
+                    .accessibilityIdentifier("ours.saveStartDate")
+                }
+            }
+            .interactiveDismissDisabled(isSavingDate)
+        }
+    }
+
+    private func saveStartedDate() async {
+        guard let couple = app.couple, !isSavingDate else { return }
+        isSavingDate = true
+        dateError = nil
+        defer { isSavingDate = false }
+        do {
+            _ = try await APIClient.updateCoupleStartedDate(coupleId: couple.id, date: draftDate)
+            await app.refresh()          // 重新拉关系，主页/本页天数一起更新
+            showDateEditor = false
+        } catch {
+            dateError = "保存失败：\(error.localizedDescription)"
+        }
+    }
 
     // MARK: - 数据
 

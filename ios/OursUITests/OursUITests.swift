@@ -133,6 +133,16 @@ final class OursUITests: XCTestCase {
         XCTAssertTrue(signOut.exists, "缺「退出登录」按钮")
         XCTAssertTrue(signOut.label.contains("退出登录"), "登出按钮文案变了：「\(signOut.label)」")
         XCTAssertTrue(signOut.isEnabled, "登出按钮初始就是禁用态")
+
+        // 修改在一起日期：能点开编辑面板就够了（只开不保存，不碰真实数据）
+        let editStart = app.buttons["ours.editStartDate"]
+        XCTAssertTrue(editStart.exists, "缺「修改在一起日期」入口")
+        editStart.tap()
+        XCTAssertTrue(app.navigationBars["修改在一起日期"].waitForExistence(timeout: 10),
+                      "日期编辑面板没打开")
+        XCTAssertTrue(app.buttons["ours.saveStartDate"].exists, "编辑面板缺保存按钮")
+        app.buttons["取消"].tap()
+        XCTAssertFalse(app.navigationBars["修改在一起日期"].exists, "点取消后面板没关掉")
     }
 
     // MARK: - T5 登出链路：二次确认 → 回登录页
