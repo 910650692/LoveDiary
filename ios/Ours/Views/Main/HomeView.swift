@@ -1,74 +1,87 @@
 import SwiftUI
 
-/// 主页：在一起天数 + 下个纪念日倒计时 + 随机回忆卡
+/// 主页：在一起天数 + 下个纪念日倒计时 + 往昔重现卡
 struct HomeView: View {
     @StateObject private var app = AppState.shared
     @State private var daysTogether: Int?
     @State private var nextAnniversary: (name: String, date: Date)?
+    /// 回忆卡的重查信号：下拉刷新时自增（卡片自己拉数据，靠 .task(id:) 跟着重跑）
+    @State private var memoryReloadToken = 0
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // 在一起天数
-                if let days = daysTogether {
-                    VStack(spacing: 6) {
-                        Text("\(days)")
-                            .font(.system(size: 64, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.oursPrimary)
-                        Text("我们在一起的天数")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 32)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.oursSecondary.opacity(0.5), Color.oursBackground],
-                            startPoint: .top, endPoint: .bottom
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                }
-
-                // 下个纪念日倒计时
-                if let next = nextAnniversary {
-                    let remaining = daysUntil(next.date)
-                    HStack {
-                        Image(systemName: "gift.fill")
-                            .foregroundStyle(Color.oursGold)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(next.name)
-                                .font(.footnote)
+        // 回忆卡要能点开照片详情，所以这一页自带 NavigationStack（和其它四个 Tab 一致）
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 在一起天数
+                    if let days = daysTogether {
+                        VStack(spacing: 6) {
+                            Text("\(days)")
+                                .font(.system(size: 64, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color.oursPrimary)
+                            Text("我们在一起的天数")
+                                .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            if remaining == 0 {
-                                Text("就是今天 🎉")
-                                    .font(.title.bold())
-                            } else {
-                                Text("还有 \(remaining) 天")
-                                    .font(.title.bold())
-                            }
                         }
-                        Spacer()
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 32)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.oursSecondary.opacity(0.5), Color.oursBackground],
+                                startPoint: .top, endPoint: .bottom
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                     }
-                    .padding()
-                    .background(Color.oursBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+
+                    // 下个纪念日倒计时
+                    if let next = nextAnniversary {
+                        let remaining = daysUntil(next.date)
+                        HStack {
+                            Image(systemName: "gift.fill")
+                                .foregroundStyle(Color.oursGold)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(next.name)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                if remaining == 0 {
+                                    Text("就是今天 🎉")
+                                        .font(.title.bold())
+                                } else {
+                                    Text("还有 \(remaining) 天")
+                                        .font(.title.bold())
+                                }
+                            }
+                            Spacer()
+                        }
+                        .padding()
+                        .background(Color.oursBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    }
+
+                    // 往昔重现：往年同期的照片（没照片就是空态，加载中同样画空态）
+                    MemoryCardView(coupleId: app.couple?.id, reloadToken: memoryReloadToken)
+
+                    Spacer(minLength: 24)
                 }
-
-                // 随机回忆卡（占位，阶段 4 接照片）
-                MemoryCardView()
-
-                Spacer(minLength: 24)
+                .padding(16)
             }
-            .padding(16)
+            .background(Color.oursBackground.opacity(0.3))
+            .refreshable { await refresh() }
+            .navigationTitle("Ours")
+            .navigationBarTitleDisplayMode(.inline)
+            .task {
+                computeDays()
+                await loadNextAnniversary()
+            }
         }
-        .background(Color.oursBackground.opacity(0.3))
-        .navigationTitle("Ours")
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            computeDays()
-            await loadNextAnniversary()
-        }
+    }
+
+    /// 下拉刷新：天数 / 倒计时 / 回忆卡一起重算
+    private func refresh() async {
+        computeDays()
+        await loadNextAnniversary()
+        memoryReloadToken += 1
     }
 
     // MARK: - 在一起天数

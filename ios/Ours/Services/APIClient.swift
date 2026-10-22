@@ -444,6 +444,80 @@ enum APIClient {
             .value
     }
 
+    // MARK: - 往昔重现（On This Day）
+
+    /// 「往年的今天」：拍摄时间落在往年同月同日 ±windowDays 内的照片，**优先取最近的那一年**。
+    ///
+    /// 为什么给每个往年拼一个 `taken_at` 区间、而不是拉回来再筛：PostgREST 的 where 里取不到
+    /// `month()` / `day()`，只能把「今年以前的全部照片」搬回客户端再比月日——那是随库线性变慢的做法。
+    /// 这里按年拼真实日期区间（±windowDays 会跨月甚至跨年，交给 Calendar 算），一次 OR 上去。
+    ///
+    /// 三条硬规则：
+    /// - `taken_at` 为 null **不参与**：没有拍摄时间就无从判断「往年的今天」，
+    ///   绝不用 `created_at` 顶替（入库时间只说明哪天传的，不代表哪天拍的）
+    /// - 今年拍的不参与：年份必须早于今年，否则这张卡就不是「回忆」了
+    /// - `is_deleted` 的不参与（软删的照片在用户视角已经不存在）
+    ///
+    /// - Returns: 命中里 `taken_at` 最晚的那张——时间戳最大 ⇒ 年份也最大，
+    ///   所以「优先最近年份」由倒序自动成立，不需要再排一次序
+    static func fetchOnThisDayPhotos(
+        coupleId: UUID,
+        windowDays: Int = PhotoReadLimits.onThisDayWindowDays
+    ) async throws -> Photo? {
+        let ranges = onThisDayRanges(windowDays: windowDays)
+        guard !ranges.isEmpty else { return nil }
+
+        let photos: [Photo] = try await client.from("photos")
+            .select()
+            .eq("couple_id", value: coupleId.uuidString)
+            .eq("is_deleted", value: false)
+            // taken_at.gte 天然挡掉 null（NULL 参与比较的结果是 unknown，不会命中）
+            .or(ranges.joined(separator: ","))
+            .order("taken_at", ascending: false)
+            .limit(PhotoReadLimits.onThisDayLimit)
+            .execute()
+            .value
+
+        return photos.first
+    }
+
+    /// 往年每一年的窗口：该年「今月今日」所在的那一天 ±windowDays，两端取当天 0 点
+    private static func onThisDayRanges(
+        windowDays: Int,
+        calendar: Calendar = .current,
+        now: Date = Date()
+    ) -> [String] {
+        let today = calendar.startOfDay(for: now)
+        let month = calendar.component(.month, from: today)
+        let day = calendar.component(.day, from: today)
+        let thisYear = calendar.component(.year, from: today)
+
+        var ranges: [String] = []
+        for year in (thisYear - PhotoReadLimits.onThisDayYearSpan)...(thisYear - 1) {
+            guard let base = occurrence(year: year, month: month, day: day, calendar: calendar),
+                  let start = calendar.date(byAdding: .day, value: -windowDays, to: base),
+                  let end = calendar.date(byAdding: .day, value: windowDays + 1, to: base)
+            else { continue }
+            // 右端写成「窗口后一天 0 点 + lt」：不用给 lte 手拼 23:59:59.999999 这种边界
+            ranges.append("and(taken_at.gte.\(cursorTimestamp(start)),taken_at.lt.\(cursorTimestamp(end)))")
+        }
+        return ranges
+    }
+
+    /// 某年的「今月今日」当天 0 点。闰日 2/29 在平年夹到 2/28（与主页倒计时的处理一致）
+    private static func occurrence(year: Int, month: Int, day: Int, calendar: Calendar) -> Date? {
+        var comps = DateComponents()
+        comps.year = year
+        comps.month = month
+        comps.day = 1
+        guard let firstOfMonth = calendar.date(from: comps),
+              let daysInMonth = calendar.range(of: .day, in: .month, for: firstOfMonth)?.count
+        else { return nil }
+
+        comps.day = min(day, daysInMonth)
+        return calendar.date(from: comps).map { calendar.startOfDay(for: $0) }
+    }
+
     // MARK: - 照片时间线（keyset 分页）
 
     /// 时间线一页：`taken_at desc nulls last, created_at desc, id desc`
@@ -578,6 +652,12 @@ enum PhotoReadLimits {
     static let signBatchSize = 20
     /// 签名 URL 有效期兜底值（服务端响应里的 `expiresIn` 优先）
     static let expiresIn = 900
+    /// 「往年的今天」窗口：今月今日 ±3 天
+    static let onThisDayWindowDays = 3
+    /// 「往年的今天」往回找多少年（再老的照片基本不会出现在两个人的手机里）
+    static let onThisDayYearSpan = 30
+    /// 「往年的今天」最多取多少行：只要最近年份里最新的一张，50 行足够
+    static let onThisDayLimit = 50
 }
 
 /// 照片上传链路的客户端错误（Edge Function 的中文 error 直接透传）
